@@ -1,0 +1,404 @@
+{
+  "dataset_version": "phase9_v3",
+  "k": 5,
+  "summary": {
+    "case_count": 8,
+    "average_recall_at_k": 1.0,
+    "mean_reciprocal_rank": 0.9375,
+    "fact_citation_hit_rate": 1.0,
+    "passed": true,
+    "thresholds": {
+      "min_average_recall_at_k": 0.82,
+      "min_mean_reciprocal_rank": 0.65,
+      "min_citation_hit_rate": 0.8,
+      "min_relation_context_hit_rate": 0.66,
+      "min_relation_expansion_hit_rate": 0.5,
+      "min_relation_trace_rate": 0.66,
+      "min_relation_precision": 0.55,
+      "min_relation_expansion_precision": 0.7,
+      "min_relation_noise_free_rate": 0.6,
+      "min_relation_expansion_noise_free_rate": 0.8,
+      "min_answer_quality_hit_rate": 0.8
+    }
+  },
+  "cases": [
+    {
+      "id": "rag_architecture",
+      "question": "我最近关于 RAG 架构记录了什么？",
+      "expected_titles": [
+        "Eval Memory RAG Architecture"
+      ],
+      "candidate_titles": [
+        "Eval Memory RAG Architecture",
+        "Eval Noise Graph Paper Errand",
+        "Eval Memory Paper Reading",
+        "Eval Memory LangGraph Workflow",
+        "Eval Noise Agent Movie Night"
+      ],
+      "hit_titles": [
+        "Eval Memory RAG Architecture"
+      ],
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "fact_type_hit": true,
+      "top_scores": [
+        {
+          "title": "Eval Memory RAG Architecture",
+          "score": 12.3904,
+          "snippet": "我最近在研究 RAG 架构，重点关注 chunking、embedding、hybrid retrieval、rerank 和 context packing"
+        },
+        {
+          "title": "Eval Noise Graph Paper Errand",
+          "score": 8.3685,
+          "snippet": "周末买了 graph paper、铅笔和便利贴，准备整理书桌抽屉。这条是文具采买记录，不是技术架构记录"
+        },
+        {
+          "title": "Eval Memory Paper Reading",
+          "score": 5.4947,
+          "snippet": "晚上读了一篇关于 embedding retrieval evaluation 的论文，里面提到了 recall@k、MRR 和 citation precision"
+        },
+        {
+          "title": "Eval Memory LangGraph Workflow",
+          "score": 5.1,
+          "snippet": "今天学习 LangGraph 工作流，记录了 query planner、tool calling、workflow state 和 agent tracing 的设计"
+        },
+        {
+          "title": "Eval Noise Agent Movie Night",
+          "score": 3.4349,
+          "snippet": "晚上看了一部片名里有 Agent 的科幻电影，只是娱乐记录，和 AI Agent 产品设计无关"
+        }
+      ]
+    },
+    {
+      "id": "langgraph_workflow",
+      "question": "LangGraph 工作流相关记录有哪些？",
+      "expected_titles": [
+        "Eval Memory LangGraph Workflow"
+      ],
+      "candidate_titles": [
+        "Eval Memory LangGraph Workflow",
+        "Eval Noise Graph Paper Errand",
+        "Eval Memory RAG Architecture",
+        "Eval Noise Agent Movie Night",
+        "Eval Noise Agent Movie Night"
+      ],
+      "hit_titles": [
+        "Eval Memory LangGraph Workflow"
+      ],
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "fact_type_hit": true,
+      "top_scores": [
+        {
+          "title": "Eval Memory LangGraph Workflow",
+          "score": 7.5661,
+          "snippet": "今天学习 LangGraph 工作流，记录了 query planner、tool calling、workflow state 和 agent tracing 的设计"
+        },
+        {
+          "title": "Eval Noise Graph Paper Errand",
+          "score": 3.9174,
+          "snippet": "周末买了 graph paper、铅笔和便利贴，准备整理书桌抽屉。这条是文具采买记录，不是技术架构记录"
+        },
+        {
+          "title": "Eval Memory RAG Architecture",
+          "score": 3.6038,
+          "snippet": "我最近在研究 RAG 架构，重点关注 chunking、embedding、hybrid retrieval、rerank 和 context packing"
+        },
+        {
+          "title": "Eval Noise Agent Movie Night",
+          "score": 3.3589,
+          "snippet": "晚上看了一部片名里有 Agent 的科幻电影，只是娱乐记录，和 AI Agent 产品设计无关"
+        },
+        {
+          "title": "Eval Noise Agent Movie Night",
+          "score": 3.3589,
+          "snippet": "晚上看了一部片名里有 Agent 的科幻电影，只是娱乐记录，和 AI Agent 产品设计无关"
+        }
+      ]
+    },
+    {
+      "id": "roomos",
+      "question": "最近提到 RoomOS 的内容有哪些？",
+      "expected_titles": [
+        "Eval Memory RoomOS Notes"
+      ],
+      "candidate_titles": [
+        "Eval Memory RoomOS Notes",
+        "Eval Memory RAG Architecture",
+        "Eval Memory LangGraph Workflow",
+        "Eval Memory Paper Reading",
+        "Eval Noise Graph Paper Errand"
+      ],
+      "hit_titles": [
+        "Eval Memory RoomOS Notes"
+      ],
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "fact_type_hit": true,
+      "top_scores": [
+        {
+          "title": "Eval Memory RoomOS Notes",
+          "score": 5.7908,
+          "snippet": "最近提到 RoomOS，主要是在比较桌面 AI 工作区、窗口上下文和本地个人记忆系统的交互方式"
+        },
+        {
+          "title": "Eval Memory RAG Architecture",
+          "score": 3.8738,
+          "snippet": "我最近在研究 RAG 架构，重点关注 chunking、embedding、hybrid retrieval、rerank 和 context packing"
+        },
+        {
+          "title": "Eval Memory LangGraph Workflow",
+          "score": 3.8,
+          "snippet": "今天学习 LangGraph 工作流，记录了 query planner、tool calling、workflow state 和 agent tracing 的设计"
+        },
+        {
+          "title": "Eval Memory Paper Reading",
+          "score": 3.2,
+          "snippet": "晚上读了一篇关于 embedding retrieval evaluation 的论文，里面提到了 recall@k、MRR 和 citation precision"
+        },
+        {
+          "title": "Eval Noise Graph Paper Errand",
+          "score": 1.95,
+          "snippet": "周末买了 graph paper、铅笔和便利贴，准备整理书桌抽屉。这条是文具采买记录，不是技术架构记录"
+        }
+      ]
+    },
+    {
+      "id": "monthly_expense",
+      "question": "我这个月总共花了多少钱？",
+      "expected_titles": [
+        "Eval Memory Expense Headphones",
+        "Eval Memory Expense Coffee"
+      ],
+      "candidate_titles": [
+        "Eval Memory Expense Headphones",
+        "Eval Memory Expense Coffee",
+        "Eval Memory Plan Rent",
+        "Eval Memory Garden Errand",
+        "Eval Noise Graph Paper Errand"
+      ],
+      "hit_titles": [
+        "Eval Memory Expense Headphones",
+        "Eval Memory Expense Coffee"
+      ],
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "fact_type_hit": true,
+      "top_scores": [
+        {
+          "title": "Eval Memory Expense Headphones",
+          "score": 3.7884,
+          "snippet": "今天花了100元买耳机，感觉音质还不错"
+        },
+        {
+          "title": "Eval Memory Expense Coffee",
+          "score": 3.65,
+          "snippet": "今天花了28元买咖啡，下午写代码的时候喝了"
+        },
+        {
+          "title": "Eval Memory Plan Rent",
+          "score": 2.3488,
+          "snippet": "下个月记得交房租，最好提前两天提醒我"
+        },
+        {
+          "title": "Eval Memory Garden Errand",
+          "score": 1.025,
+          "snippet": "周末去花市买了绿植，还需要记得给阳台的盆栽浇水"
+        },
+        {
+          "title": "Eval Noise Graph Paper Errand",
+          "score": 0.8,
+          "snippet": "周末买了 graph paper、铅笔和便利贴，准备整理书桌抽屉。这条是文具采买记录，不是技术架构记录"
+        }
+      ]
+    },
+    {
+      "id": "recent_mood",
+      "question": "我最近睡眠和情绪怎么样？",
+      "expected_titles": [
+        "Eval Memory Mood Sleep"
+      ],
+      "candidate_titles": [
+        "Eval Memory RAG Architecture",
+        "Eval Memory Mood Sleep",
+        "Eval Memory RoomOS Notes",
+        "Eval Noise Agent Movie Night",
+        "Eval Noise Agent Movie Night"
+      ],
+      "hit_titles": [
+        "Eval Memory Mood Sleep"
+      ],
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 0.5,
+      "fact_type_hit": true,
+      "top_scores": [
+        {
+          "title": "Eval Memory RAG Architecture",
+          "score": 4.687,
+          "snippet": "我最近在研究 RAG 架构，重点关注 chunking、embedding、hybrid retrieval、rerank 和 context packing"
+        },
+        {
+          "title": "Eval Memory Mood Sleep",
+          "score": 2.75,
+          "snippet": "昨天晚上睡得不好，今天精神有点疲惫，工作效率不高"
+        },
+        {
+          "title": "Eval Memory RoomOS Notes",
+          "score": 1.0,
+          "snippet": "最近提到 RoomOS，主要是在比较桌面 AI 工作区、窗口上下文和本地个人记忆系统的交互方式"
+        },
+        {
+          "title": "Eval Noise Agent Movie Night",
+          "score": 0.5702,
+          "snippet": "晚上看了一部片名里有 Agent 的科幻电影，只是娱乐记录，和 AI Agent 产品设计无关"
+        },
+        {
+          "title": "Eval Noise Agent Movie Night",
+          "score": 0.5702,
+          "snippet": "晚上看了一部片名里有 Agent 的科幻电影，只是娱乐记录，和 AI Agent 产品设计无关"
+        }
+      ]
+    },
+    {
+      "id": "rent_plan",
+      "question": "下个月有什么需要记得处理？",
+      "expected_titles": [
+        "Eval Memory Plan Rent"
+      ],
+      "candidate_titles": [
+        "Eval Memory Plan Rent",
+        "Eval Memory Garden Errand",
+        "Eval Noise Agent Movie Night",
+        "Eval Noise Agent Movie Night",
+        "Eval Memory Mood Sleep"
+      ],
+      "hit_titles": [
+        "Eval Memory Plan Rent"
+      ],
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "fact_type_hit": true,
+      "top_scores": [
+        {
+          "title": "Eval Memory Plan Rent",
+          "score": 9.4844,
+          "snippet": "下个月记得交房租，最好提前两天提醒我"
+        },
+        {
+          "title": "Eval Memory Garden Errand",
+          "score": 6.9814,
+          "snippet": "周末去花市买了绿植，还需要记得给阳台的盆栽浇水"
+        },
+        {
+          "title": "Eval Noise Agent Movie Night",
+          "score": 0.5795,
+          "snippet": "晚上看了一部片名里有 Agent 的科幻电影，只是娱乐记录，和 AI Agent 产品设计无关"
+        },
+        {
+          "title": "Eval Noise Agent Movie Night",
+          "score": 0.5795,
+          "snippet": "晚上看了一部片名里有 Agent 的科幻电影，只是娱乐记录，和 AI Agent 产品设计无关"
+        },
+        {
+          "title": "Eval Memory Mood Sleep",
+          "score": 0.1459,
+          "snippet": "昨天晚上睡得不好，今天精神有点疲惫，工作效率不高"
+        }
+      ]
+    },
+    {
+      "id": "startup_chat",
+      "question": "我最近和朋友聊到创业了吗？",
+      "expected_titles": [
+        "Eval Memory Startup Chat"
+      ],
+      "candidate_titles": [
+        "Eval Memory Startup Chat",
+        "Eval Memory RAG Architecture",
+        "Eval Memory RoomOS Notes",
+        "Eval Memory Paper Reading",
+        "Eval Noise Agent Movie Night"
+      ],
+      "hit_titles": [
+        "Eval Memory Startup Chat"
+      ],
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "fact_type_hit": true,
+      "top_scores": [
+        {
+          "title": "Eval Memory Startup Chat",
+          "score": 10.8028,
+          "snippet": "今天和朋友聊到了创业，讨论了 AI Agent 产品、个人知识管理和长期记忆系统的机会"
+        },
+        {
+          "title": "Eval Memory RAG Architecture",
+          "score": 4.7315,
+          "snippet": "我最近在研究 RAG 架构，重点关注 chunking、embedding、hybrid retrieval、rerank 和 context packing"
+        },
+        {
+          "title": "Eval Memory RoomOS Notes",
+          "score": 1.159,
+          "snippet": "最近提到 RoomOS，主要是在比较桌面 AI 工作区、窗口上下文和本地个人记忆系统的交互方式"
+        },
+        {
+          "title": "Eval Memory Paper Reading",
+          "score": 0.563,
+          "snippet": "晚上读了一篇关于 embedding retrieval evaluation 的论文，里面提到了 recall@k、MRR 和 citation precision"
+        },
+        {
+          "title": "Eval Noise Agent Movie Night",
+          "score": 0.5428,
+          "snippet": "晚上看了一部片名里有 Agent 的科幻电影，只是娱乐记录，和 AI Agent 产品设计无关"
+        }
+      ]
+    },
+    {
+      "id": "retrieval_eval",
+      "question": "检索评估里面提到了哪些指标？",
+      "expected_titles": [
+        "Eval Memory Paper Reading"
+      ],
+      "candidate_titles": [
+        "Eval Memory Paper Reading",
+        "Eval Memory Project Roadmap",
+        "Eval Memory RAG Architecture",
+        "Eval Memory LangGraph Workflow",
+        "Eval Memory Startup Chat"
+      ],
+      "hit_titles": [
+        "Eval Memory Paper Reading"
+      ],
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "fact_type_hit": true,
+      "top_scores": [
+        {
+          "title": "Eval Memory Paper Reading",
+          "score": 11.4019,
+          "snippet": "晚上读了一篇关于 embedding retrieval evaluation 的论文，里面提到了 recall@k、MRR 和 citation precision"
+        },
+        {
+          "title": "Eval Memory Project Roadmap",
+          "score": 7.9364,
+          "snippet": "MySecondBrain 下一阶段要补检索评估、Memory Graph、Agent workflow trace 和长期总结能力"
+        },
+        {
+          "title": "Eval Memory RAG Architecture",
+          "score": 3.5462,
+          "snippet": "我最近在研究 RAG 架构，重点关注 chunking、embedding、hybrid retrieval、rerank 和 context packing"
+        },
+        {
+          "title": "Eval Memory LangGraph Workflow",
+          "score": 3.45,
+          "snippet": "今天学习 LangGraph 工作流，记录了 query planner、tool calling、workflow state 和 agent tracing 的设计"
+        },
+        {
+          "title": "Eval Memory Startup Chat",
+          "score": 2.9569,
+          "snippet": "今天和朋友聊到了创业，讨论了 AI Agent 产品、个人知识管理和长期记忆系统的机会"
+        }
+      ]
+    }
+  ]
+}

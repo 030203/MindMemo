@@ -1,0 +1,24 @@
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Backend
+backend/__pycache__/
+backend/.pytest_cache/
+backend/.venv/
+backend/logs/
+backend/data/
+backend/**/*.pyc
+
+# Shared
+logs/
+*.log
+.env
+.env.local
+.DS_Store
+Thumbs.db
+
+# 系统文件
+.DS_Store
+Thumbs.db

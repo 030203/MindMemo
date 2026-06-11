@@ -1,0 +1,1 @@
+"""MindMemo backend package."""

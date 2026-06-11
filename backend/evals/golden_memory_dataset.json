@@ -1,0 +1,216 @@
+{
+  "version": "phase9_v3",
+  "description": "Golden dataset for MySecondBrain retrieval and grounded-QA regression.",
+  "seed_memories": [
+    {
+      "title": "Eval Memory RAG Architecture",
+      "category": "learning",
+      "content": "\u6211\u6700\u8fd1\u5728\u7814\u7a76 RAG \u67b6\u6784\uff0c\u91cd\u70b9\u5173\u6ce8 chunking\u3001embedding\u3001hybrid retrieval\u3001rerank \u548c context packing\u3002"
+    },
+    {
+      "title": "Eval Memory LangGraph Workflow",
+      "category": "learning",
+      "content": "\u4eca\u5929\u5b66\u4e60 LangGraph \u5de5\u4f5c\u6d41\uff0c\u8bb0\u5f55\u4e86 query planner\u3001tool calling\u3001workflow state \u548c agent tracing \u7684\u8bbe\u8ba1\u3002"
+    },
+    {
+      "title": "Eval Memory RoomOS Notes",
+      "category": "learning",
+      "content": "\u6700\u8fd1\u63d0\u5230 RoomOS\uff0c\u4e3b\u8981\u662f\u5728\u6bd4\u8f83\u684c\u9762 AI \u5de5\u4f5c\u533a\u3001\u7a97\u53e3\u4e0a\u4e0b\u6587\u548c\u672c\u5730\u4e2a\u4eba\u8bb0\u5fc6\u7cfb\u7edf\u7684\u4ea4\u4e92\u65b9\u5f0f\u3002"
+    },
+    {
+      "title": "Eval Memory Expense Headphones",
+      "category": "memo",
+      "content": "\u4eca\u5929\u82b1\u4e86100\u5143\u4e70\u8033\u673a\uff0c\u611f\u89c9\u97f3\u8d28\u8fd8\u4e0d\u9519\u3002"
+    },
+    {
+      "title": "Eval Memory Expense Coffee",
+      "category": "memo",
+      "content": "\u4eca\u5929\u82b1\u4e8628\u5143\u4e70\u5496\u5561\uff0c\u4e0b\u5348\u5199\u4ee3\u7801\u7684\u65f6\u5019\u559d\u4e86\u3002"
+    },
+    {
+      "title": "Eval Memory Mood Sleep",
+      "category": "memo",
+      "content": "\u6628\u5929\u665a\u4e0a\u7761\u5f97\u4e0d\u597d\uff0c\u4eca\u5929\u7cbe\u795e\u6709\u70b9\u75b2\u60eb\uff0c\u5de5\u4f5c\u6548\u7387\u4e0d\u9ad8\u3002"
+    },
+    {
+      "title": "Eval Memory Plan Rent",
+      "category": "memo",
+      "content": "\u4e0b\u4e2a\u6708\u8bb0\u5f97\u4ea4\u623f\u79df\uff0c\u6700\u597d\u63d0\u524d\u4e24\u5929\u63d0\u9192\u6211\u3002"
+    },
+    {
+      "title": "Eval Memory Startup Chat",
+      "category": "memo",
+      "content": "\u4eca\u5929\u548c\u670b\u53cb\u804a\u5230\u4e86\u521b\u4e1a\uff0c\u8ba8\u8bba\u4e86 AI Agent \u4ea7\u54c1\u3001\u4e2a\u4eba\u77e5\u8bc6\u7ba1\u7406\u548c\u957f\u671f\u8bb0\u5fc6\u7cfb\u7edf\u7684\u673a\u4f1a\u3002"
+    },
+    {
+      "title": "Eval Memory Project Roadmap",
+      "category": "project",
+      "content": "MySecondBrain \u4e0b\u4e00\u9636\u6bb5\u8981\u8865\u68c0\u7d22\u8bc4\u4f30\u3001Memory Graph\u3001Agent workflow trace \u548c\u957f\u671f\u603b\u7ed3\u80fd\u529b\u3002"
+    },
+    {
+      "title": "Eval Memory Paper Reading",
+      "category": "learning",
+      "content": "\u665a\u4e0a\u8bfb\u4e86\u4e00\u7bc7\u5173\u4e8e embedding retrieval evaluation \u7684\u8bba\u6587\uff0c\u91cc\u9762\u63d0\u5230\u4e86 recall@k\u3001MRR \u548c citation precision\u3002"
+    },
+    {
+      "title": "Eval Memory Garden Errand",
+      "category": "memo",
+      "content": "\u5468\u672b\u53bb\u82b1\u5e02\u4e70\u4e86\u7eff\u690d\uff0c\u8fd8\u9700\u8981\u8bb0\u5f97\u7ed9\u9633\u53f0\u7684\u76c6\u683d\u6d47\u6c34\u3002"
+    },
+    {
+      "title": "Eval Noise Graph Paper Errand",
+      "category": "memo",
+      "content": "\u5468\u672b\u4e70\u4e86 graph paper\u3001\u94c5\u7b14\u548c\u4fbf\u5229\u8d34\uff0c\u51c6\u5907\u6574\u7406\u4e66\u684c\u62bd\u5c49\u3002\u8fd9\u6761\u662f\u6587\u5177\u91c7\u4e70\u8bb0\u5f55\uff0c\u4e0d\u662f\u6280\u672f\u67b6\u6784\u8bb0\u5f55\u3002"
+    },
+    {
+      "title": "Eval Noise Agent Movie Night",
+      "category": "memo",
+      "content": "\u665a\u4e0a\u770b\u4e86\u4e00\u90e8\u7247\u540d\u91cc\u6709 Agent \u7684\u79d1\u5e7b\u7535\u5f71\uff0c\u53ea\u662f\u5a31\u4e50\u8bb0\u5f55\uff0c\u548c AI Agent \u4ea7\u54c1\u8bbe\u8ba1\u65e0\u5173\u3002"
+    }
+  ],
+  "retrieval_cases": [
+    {
+      "id": "rag_architecture",
+      "question": "\u6211\u6700\u8fd1\u5173\u4e8e RAG \u67b6\u6784\u8bb0\u5f55\u4e86\u4ec0\u4e48\uff1f",
+      "expected_titles": ["Eval Memory RAG Architecture"],
+      "expected_fact_types": ["learning"]
+    },
+    {
+      "id": "langgraph_workflow",
+      "question": "LangGraph \u5de5\u4f5c\u6d41\u76f8\u5173\u8bb0\u5f55\u6709\u54ea\u4e9b\uff1f",
+      "expected_titles": ["Eval Memory LangGraph Workflow"],
+      "expected_fact_types": ["learning"]
+    },
+    {
+      "id": "roomos",
+      "question": "\u6700\u8fd1\u63d0\u5230 RoomOS \u7684\u5185\u5bb9\u6709\u54ea\u4e9b\uff1f",
+      "expected_titles": ["Eval Memory RoomOS Notes"],
+      "expected_fact_types": ["learning"]
+    },
+    {
+      "id": "monthly_expense",
+      "question": "\u6211\u8fd9\u4e2a\u6708\u603b\u5171\u82b1\u4e86\u591a\u5c11\u94b1\uff1f",
+      "expected_titles": ["Eval Memory Expense Headphones", "Eval Memory Expense Coffee"],
+      "expected_fact_types": ["expense"]
+    },
+    {
+      "id": "recent_mood",
+      "question": "\u6211\u6700\u8fd1\u7761\u7720\u548c\u60c5\u7eea\u600e\u4e48\u6837\uff1f",
+      "expected_titles": ["Eval Memory Mood Sleep"],
+      "expected_fact_types": ["mood"]
+    },
+    {
+      "id": "rent_plan",
+      "question": "\u4e0b\u4e2a\u6708\u6709\u4ec0\u4e48\u9700\u8981\u8bb0\u5f97\u5904\u7406\uff1f",
+      "expected_titles": ["Eval Memory Plan Rent"],
+      "expected_fact_types": ["plan"]
+    },
+    {
+      "id": "startup_chat",
+      "question": "\u6211\u6700\u8fd1\u548c\u670b\u53cb\u804a\u5230\u521b\u4e1a\u4e86\u5417\uff1f",
+      "expected_titles": ["Eval Memory Startup Chat"]
+    },
+    {
+      "id": "retrieval_eval",
+      "question": "\u68c0\u7d22\u8bc4\u4f30\u91cc\u9762\u63d0\u5230\u4e86\u54ea\u4e9b\u6307\u6807\uff1f",
+      "expected_titles": ["Eval Memory Paper Reading"]
+    }
+  ],
+  "relation_cases": [
+    {
+      "id": "project_roadmap_context",
+      "question": "Eval Memory Project Roadmap \u7684\u4e0a\u4e0b\u6587\u7ebf\u7d22\u662f\u4ec0\u4e48\uff1f",
+      "anchor_titles": ["Eval Memory Project Roadmap"],
+      "expected_related_titles": ["Eval Memory RAG Architecture", "Eval Memory LangGraph Workflow"],
+      "allowed_related_titles": ["Eval Memory Startup Chat", "Eval Memory RoomOS Notes"],
+      "forbidden_titles": ["Eval Memory Garden Errand", "Eval Memory Expense Coffee", "Eval Memory Expense Headphones", "Eval Noise Graph Paper Errand", "Eval Noise Agent Movie Night"]
+    },
+    {
+      "id": "startup_chat_context",
+      "question": "Eval Memory Startup Chat \u9644\u8fd1\u6709\u54ea\u4e9b\u5173\u8054\u7ebf\u7d22\uff1f",
+      "anchor_titles": ["Eval Memory Startup Chat"],
+      "expected_related_titles": ["Eval Memory Project Roadmap"],
+      "allowed_related_titles": ["Eval Memory LangGraph Workflow", "Eval Memory RoomOS Notes"],
+      "forbidden_titles": ["Eval Memory Garden Errand", "Eval Memory Expense Coffee", "Eval Noise Graph Paper Errand", "Eval Noise Agent Movie Night"]
+    },
+    {
+      "id": "paper_reading_context",
+      "question": "Eval Memory Paper Reading \u7684\u76f8\u5173\u4e0a\u4e0b\u6587\u662f\u4ec0\u4e48\uff1f",
+      "anchor_titles": ["Eval Memory Paper Reading"],
+      "expected_related_titles": ["Eval Memory RAG Architecture"],
+      "allowed_related_titles": ["Eval Memory Project Roadmap"],
+      "forbidden_titles": ["Eval Memory Garden Errand", "Eval Memory Expense Coffee", "Eval Memory Expense Headphones", "Eval Memory Mood Sleep", "Eval Noise Graph Paper Errand", "Eval Noise Agent Movie Night"]
+    },
+    {
+      "id": "plan_rent_context",
+      "question": "Eval Memory Plan Rent \u7684\u76f8\u5173\u4e0a\u4e0b\u6587\u662f\u4ec0\u4e48\uff1f",
+      "anchor_titles": ["Eval Memory Plan Rent"],
+      "expected_related_titles": [],
+      "allowed_related_titles": [],
+      "forbidden_titles": ["Eval Memory Garden Errand", "Eval Memory Startup Chat", "Eval Memory Expense Coffee", "Eval Memory Expense Headphones", "Eval Noise Graph Paper Errand", "Eval Noise Agent Movie Night"]
+    },
+    {
+      "id": "garden_errand_context",
+      "question": "Eval Memory Garden Errand \u7684\u76f8\u5173\u4e0a\u4e0b\u6587\u662f\u4ec0\u4e48\uff1f",
+      "anchor_titles": ["Eval Memory Garden Errand"],
+      "expected_related_titles": [],
+      "forbidden_titles": ["Eval Memory Project Roadmap", "Eval Memory RAG Architecture", "Eval Memory LangGraph Workflow", "Eval Memory Startup Chat", "Eval Noise Graph Paper Errand", "Eval Noise Agent Movie Night"]
+    },
+    {
+      "id": "graph_paper_noise_context",
+      "question": "Eval Noise Graph Paper Errand \u7684\u76f8\u5173\u4e0a\u4e0b\u6587\u662f\u4ec0\u4e48\uff1f",
+      "anchor_titles": ["Eval Noise Graph Paper Errand"],
+      "expected_related_titles": [],
+      "allowed_related_titles": [],
+      "forbidden_titles": ["Eval Memory Project Roadmap", "Eval Memory RAG Architecture", "Eval Memory LangGraph Workflow", "Eval Memory Paper Reading"]
+    },
+    {
+      "id": "agent_movie_noise_context",
+      "question": "Eval Noise Agent Movie Night \u7684\u76f8\u5173\u4e0a\u4e0b\u6587\u662f\u4ec0\u4e48\uff1f",
+      "anchor_titles": ["Eval Noise Agent Movie Night"],
+      "expected_related_titles": [],
+      "allowed_related_titles": [],
+      "forbidden_titles": ["Eval Memory Project Roadmap", "Eval Memory LangGraph Workflow", "Eval Memory Startup Chat"]
+    }
+  ],
+  "qa_quality_cases": [
+    {
+      "id": "answer_quality_retrieval_metrics",
+      "question": "\u68c0\u7d22\u8bc4\u4f30\u91cc\u63d0\u5230\u54ea\u4e9b\u5177\u4f53\u6307\u6807\uff1f",
+      "expected_titles": ["Eval Memory Paper Reading"],
+      "must_include": ["recall@k", "MRR", "citation precision"],
+      "must_not_include": ["\u6708\u5ea6\u6d88\u8d39", "\u623f\u79df"]
+    },
+    {
+      "id": "followup_question_context_metrics",
+      "question": "\u90a3\u5177\u4f53\u6709\u54ea\u4e9b\u6307\u6807\uff1f",
+      "conversation_context": [
+        {
+          "role": "user",
+          "content": "\u68c0\u7d22\u8bc4\u4f30\u90a3\u7bc7\u8bba\u6587\u4e3b\u8981\u8bb0\u4e86\u4ec0\u4e48\uff1f"
+        },
+        {
+          "role": "assistant",
+          "content": "\u8fd9\u4e2a\u95ee\u9898\u5728\u8be2\u95ee embedding retrieval evaluation \u8bba\u6587\u7684\u8bb0\u5f55\u3002"
+        }
+      ],
+      "expected_titles": ["Eval Memory Paper Reading"],
+      "must_include": ["recall@k", "MRR"],
+      "must_not_include": ["graph paper", "\u79d1\u5e7b\u7535\u5f71"],
+      "expect_conversation_context_used": true
+    }
+  ],
+  "thresholds": {
+    "min_average_recall_at_k": 0.82,
+    "min_mean_reciprocal_rank": 0.65,
+    "min_citation_hit_rate": 0.8,
+    "min_relation_context_hit_rate": 0.66,
+    "min_relation_expansion_hit_rate": 0.5,
+    "min_relation_trace_rate": 0.66,
+    "min_relation_precision": 0.55,
+    "min_relation_expansion_precision": 0.7,
+    "min_relation_noise_free_rate": 0.6,
+    "min_relation_expansion_noise_free_rate": 0.8,
+    "min_answer_quality_hit_rate": 0.8
+  }
+}
