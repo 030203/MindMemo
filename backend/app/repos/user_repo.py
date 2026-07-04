@@ -42,11 +42,6 @@ class UserRepository:
             timezone="Asia/Shanghai",
             language="zh-CN",
             notify_channels=["in_app"],
-            llm_provider="deepseek",
-            llm_model="deepseek-v4-flash",
-            auto_tag_enabled=True,
-            auto_summary_enabled=True,
-            web_search_enabled=False,
         )
         db.add(settings)
         db.flush()

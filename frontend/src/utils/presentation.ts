@@ -28,21 +28,6 @@ const reviewTypeMap: Record<string, string> = {
   relation_confirmation: "关联待确认",
 };
 
-const timelineTypeMap: Record<string, string> = {
-  memory_created: "新增记录",
-  todo_created: "新增待办",
-  todo_done: "完成待办",
-  reminder_sent: "发送提醒",
-  summary_generated: "生成总结",
-};
-
-const factTypeMap: Record<string, string> = {
-  expense: "消费",
-  mood: "状态",
-  learning: "学习",
-  plan: "计划",
-};
-
 const memoryStatusMap: Record<string, string> = {
   active: "已收好",
   archived: "已归档",
@@ -95,14 +80,6 @@ export function formatTodoPriority(priority: string) {
 
 export function formatReviewType(reviewType: string) {
   return reviewTypeMap[reviewType] ?? reviewType;
-}
-
-export function formatTimelineType(eventType: string) {
-  return timelineTypeMap[eventType] ?? eventType;
-}
-
-export function formatFactType(factType: string) {
-  return factTypeMap[factType] ?? factType;
 }
 
 export function formatMemoryStatus(status: string) {
@@ -173,26 +150,6 @@ export function describeImportance(score: number) {
   }
 
   return "轻量记录";
-}
-
-export function formatCitationStrength(score: number) {
-  if (score >= 0.85) {
-    return "高度相关";
-  }
-
-  if (score >= 0.7) {
-    return "比较相关";
-  }
-
-  if (score >= 0.5) {
-    return "有一定关联";
-  }
-
-  return "弱关联";
-}
-
-export function formatQAModeLabel(mode: "memory_only" | "hybrid_web") {
-  return mode === "memory_only" ? "只根据你的记录" : "记录 + 联网补充";
 }
 
 export function buildTitleFromText(text: string, fallback: string) {

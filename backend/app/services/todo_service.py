@@ -10,7 +10,6 @@ from app.models.todo import TodoItem
 from app.repos.timeline_repo import timeline_repository
 from app.repos.todo_repo import todo_repository
 from app.schemas.todo import TodoCreateRequest, TodoResponse, TodoUpdateRequest
-from app.services.dashboard_service import dashboard_service
 
 
 def utcnow() -> datetime:
@@ -50,7 +49,7 @@ class TodoService:
         priority: str | None = None,
         sort: str | None = "priority",
     ) -> list[TodoResponse]:
-        todos = todo_repository.list_for_user(db, user_id, query_text=query_text, status=status, priority=priority, sort=sort)
+        todos = todo_repository.list_for_user(db, user_id, query_text=query_text, status=status, priority=priority, sort=sort, exclude_reminders=True)
         return [_to_todo_response(todo) for todo in todos]
 
     def create_todo(self, db: Session, user_id: uuid.UUID, payload: TodoCreateRequest) -> TodoResponse:
@@ -78,7 +77,6 @@ class TodoService:
             ),
         )
         db.commit()
-        dashboard_service.invalidate_insight_cache(user_id)
         db.refresh(todo)
         return _to_todo_response(todo)
 
@@ -102,7 +100,6 @@ class TodoService:
             ),
         )
         db.commit()
-        dashboard_service.invalidate_insight_cache(user_id)
         db.refresh(todo)
         return _to_todo_response(todo)
 
@@ -140,9 +137,39 @@ class TodoService:
             )
 
         db.commit()
-        dashboard_service.invalidate_insight_cache(user_id)
         db.refresh(todo)
         return _to_todo_response(todo)
+
+    def create_from_ingest(
+        self,
+        db: Session,
+        *,
+        user_id: uuid.UUID,
+        source_memory_id: uuid.UUID,
+        title: str,
+        due_at: datetime | None = None,
+        remind_at: datetime | None = None,
+    ) -> TodoItem:
+        """从文本录入直接创建 todo/reminder，跳过 LLM 分类步骤。"""
+        # reminder 类型：due_at 和 remind_at 保持一致，让提醒系统能识别
+        effective_due_at = remind_at if remind_at is not None else due_at
+        todo = TodoItem(
+            id=uuid.uuid4(),
+            user_id=user_id,
+            source_memory_id=source_memory_id,
+            title=title[:255],
+            status="pending",
+            priority="medium",
+            due_at=effective_due_at,
+            remind_at=remind_at,
+            risk_level=_derive_risk_level("medium", due_at),
+            ai_generated=False,
+            requires_approval=False,
+        )
+        db.add(todo)
+        db.commit()
+        db.refresh(todo)
+        return todo
 
     def delete_todo(self, db: Session, user_id: uuid.UUID, todo_id: str) -> bool:
         todo = todo_repository.get_for_user(db, user_id, uuid.UUID(todo_id))
@@ -162,7 +189,6 @@ class TodoService:
             ),
         )
         db.commit()
-        dashboard_service.invalidate_insight_cache(user_id)
         return True
 
 

@@ -25,7 +25,10 @@ def ensure_local(value: datetime | None) -> datetime | None:
     if value is None:
         return None
     if value.tzinfo is None:
-        return value
+        # SQLite strips tzinfo on storage; the original value was UTC
+        # (from Pydantic-parsed ISO strings like "2026-07-01T15:20:00Z").
+        # Attach UTC tzinfo first, then convert to local time.
+        return value.replace(tzinfo=timezone.utc).astimezone().replace(tzinfo=None)
     return value.astimezone().replace(tzinfo=None)
 
 
@@ -62,6 +65,18 @@ class ReminderService:
                 for item in existing:
                     if item.id != matching.id and item.status == "active":
                         item.status = "dismissed"
+                continue
+
+            # If any dismissed reminder exists for this todo+type, skip recreation
+            dismissed_match = next(
+                (
+                    item for item in existing
+                    if item.status == "dismissed"
+                    and item.reminder_type == reminder_payload["reminder_type"]
+                ),
+                None,
+            )
+            if dismissed_match is not None:
                 continue
 
             for item in existing:
@@ -128,35 +143,35 @@ class ReminderService:
                 "reminder_type": "overdue",
                 "level": "high",
                 "title": todo.title,
-                "message": "This todo is overdue. It is worth handling soon.",
+                "message": "这项已逾期，建议尽快处理。",
             }
         if due_at is not None and due_at <= now + timedelta(hours=24):
             return {
                 "reminder_type": "due_soon",
                 "level": "medium",
                 "title": todo.title,
-                "message": "This todo is due within 24 hours.",
+                "message": "这项即将到点，请留意处理。",
             }
         if todo.priority == "urgent":
             return {
                 "reminder_type": "urgent",
                 "level": "high",
                 "title": todo.title,
-                "message": "This todo is marked urgent.",
+                "message": "这项标记为紧急，需要尽快处理。",
             }
         if todo.priority == "high" or todo.risk_level == "high":
             return {
                 "reminder_type": "important",
                 "level": "medium",
                 "title": todo.title,
-                "message": "This todo is important and should stay visible.",
+                "message": "这项比较重要，建议保持关注。",
             }
         if todo.status == "blocked":
             return {
                 "reminder_type": "blocked",
                 "level": "low",
                 "title": todo.title,
-                "message": "This todo is blocked. A note or a smaller next step may help.",
+                "message": "这项暂时卡住了，可以先拆解一个小步骤。",
             }
         return None
 

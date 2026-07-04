@@ -1,0 +1,494 @@
+/* ============================================================
+   Memories Page — warm light theme
+   ============================================================ */
+
+.mem-page {
+  padding: 32px 32px 64px;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+  color: #1a1a1a;
+}
+
+/* ── Header ── */
+.mem-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.mem-header-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.mem-header-icon {
+  color: #888;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.mem-title {
+  margin: 0 0 5px;
+  font-size: 1.55rem;
+  font-weight: 720;
+  color: #111;
+  line-height: 1.15;
+}
+
+.mem-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #888;
+  line-height: 1.6;
+  max-width: 560px;
+}
+
+.mem-count {
+  flex-shrink: 0;
+  font-size: 0.84rem;
+  color: #bbb;
+  margin-top: 6px;
+  white-space: nowrap;
+}
+
+/* ── Search bar ── */
+.mem-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 14px;
+  border: 1px solid rgba(139, 184, 156, 0.2);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.mem-search-bar:focus-within {
+  border-color: rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+}
+
+.mem-search-icon {
+  color: #bbb;
+  flex-shrink: 0;
+  margin-left: 14px;
+}
+
+.mem-search-input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 10px;
+  border: none;
+  background: transparent;
+  color: #1a1a1a;
+  font: inherit;
+  font-size: 0.92rem;
+  outline: none;
+}
+
+.mem-search-input::placeholder {
+  color: #c0bdb8;
+}
+
+.mem-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: #f0efec;
+  color: #999;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-right: 6px;
+  transition: background 0.12s;
+}
+
+.mem-search-clear:hover {
+  background: #e2e0db;
+  color: #555;
+}
+
+.mem-search-btn {
+  height: 100%;
+  padding: 0 18px;
+  border: none;
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+  background: #f5f4f0;
+  color: #555;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+  min-height: 44px;
+}
+
+.mem-search-btn:hover {
+  background: #d4e8d0;
+  color: #2d6a4f;
+}
+
+/* ── Category chips ── */
+.mem-category-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.mem-cat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  background: #fff;
+  color: #6b6b6b;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.13s, border-color 0.13s, color 0.13s;
+}
+
+.mem-cat-chip:hover {
+  background: #e8f0e4;
+  border-color: rgba(139, 184, 156, 0.3);
+  color: #2d6a4f;
+}
+
+.mem-cat-chip.active {
+  background: #2d6a4f;
+  border-color: #2d6a4f;
+  color: #fff;
+}
+
+.mem-cat-chip svg {
+  flex-shrink: 0;
+}
+
+/* ── Filter notice ── */
+.mem-filter-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 9px 14px;
+  border-radius: 9px;
+  background: #fefaf3;
+  border: 1px solid rgba(230, 180, 80, 0.22);
+  font-size: 0.86rem;
+  color: #7a6030;
+}
+
+.mem-filter-notice strong {
+  font-weight: 650;
+}
+
+.mem-filter-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: #aaa;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.12s;
+}
+
+.mem-filter-clear:hover {
+  color: #555;
+}
+
+/* ── Loading skeletons ── */
+.mem-loading-list {
+  display: grid;
+  gap: 10px;
+}
+
+.mem-skeleton-card {
+  height: 96px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #f0efec 25%, #e8e7e3 50%, #f0efec 75%);
+  background-size: 200% 100%;
+  animation: mem-shimmer 1.4s infinite;
+}
+
+@keyframes mem-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Error / empty ── */
+.mem-error-state {
+  padding: 24px;
+  border-radius: 12px;
+  background: #fff1f2;
+  border: 1px solid rgba(220, 38, 38, 0.14);
+  color: #b91c1c;
+  font-size: 0.92rem;
+}
+
+.mem-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 64px 24px;
+  border-radius: 16px;
+  border: 1px dashed rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.6);
+  color: #bbb;
+  text-align: center;
+}
+
+.mem-empty-state p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #999;
+  max-width: 380px;
+  line-height: 1.65;
+}
+
+/* ── Record list ── */
+.mem-list {
+  display: grid;
+  gap: 10px;
+}
+
+/* ── Record card ── */
+.mem-card {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.mem-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(107, 158, 122, 0.1);
+  border-color: rgba(139, 184, 156, 0.25);
+}
+
+/* ── Illustration area ── */
+.mem-card-illus-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  align-self: stretch;
+  flex-shrink: 0;
+  border-radius: 14px 0 0 14px;
+  overflow: hidden;
+  padding: 0;
+}
+
+.mem-card-illus {
+  width: 100%;
+  height: 100%;
+  min-width: 88px;
+  min-height: 88px;
+  display: block;
+}
+
+/* ── Card body ── */
+.mem-card-body {
+  flex: 1;
+  min-width: 0;
+  padding: 18px 20px 16px 18px;
+  display: grid;
+  gap: 5px;
+}
+
+/* ── Top line: category · source ── */
+.mem-card-topline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mem-card-cat {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  /* color set inline */
+}
+
+.mem-card-source {
+  font-size: 0.72rem;
+  color: #aaa;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #f5f4f0;
+}
+
+/* ── Right column: status + time ── */
+.mem-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 14px 16px 14px 8px;
+  flex-shrink: 0;
+}
+
+.mem-card-time {
+  font-size: 0.82rem;
+  color: #bbb;
+  white-space: nowrap;
+}
+
+/* ── Title ── */
+.mem-card-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #111;
+  line-height: 1.4;
+  /* clamp to 2 lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Summary ── */
+.mem-card-summary {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #888;
+  line-height: 1.6;
+  /* clamp to 2 lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Bottom row ── */
+.mem-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+/* ── Tags ── */
+.mem-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.mem-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 5px;
+  background: #e8f0e4;
+  color: #5a7d63;
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+.mem-tag-more {
+  color: #aaa;
+  background: transparent;
+  border: 1px dashed #ddd;
+}
+
+/* ── Status badge ── */
+.mem-status {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e8f0e4;
+  color: #5a7d63;
+  white-space: nowrap;
+}
+
+.mem-status-active {
+  background: rgba(107, 158, 122, 0.15);
+  color: #2d6a4f;
+}
+
+.mem-status-archived {
+  background: rgba(0, 0, 0, 0.05);
+  color: #aaa;
+}
+
+.mem-status-deleted {
+  background: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
+}
+
+/* ── Responsive ── */
+@media (max-width: 720px) {
+  .mem-page {
+    padding: 20px 16px 48px;
+  }
+
+  .mem-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mem-count {
+    margin-top: 0;
+  }
+
+  .mem-card-illus-wrap {
+    width: 64px;
+    min-height: 64px;
+  }
+
+  .mem-card-illus {
+    width: 64px;
+    height: 64px;
+  }
+
+  .mem-card-body {
+    padding: 10px 12px 10px 10px;
+  }
+
+  .mem-card-right {
+    padding: 10px 12px 10px 4px;
+  }
+
+  .mem-card-topline {
+    gap: 6px;
+  }
+}

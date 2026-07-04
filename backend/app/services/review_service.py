@@ -12,10 +12,7 @@ from app.repos.review_repo import review_repository
 from app.repos.timeline_repo import timeline_repository
 from app.repos.todo_repo import todo_repository
 from app.schemas.review import ReviewQueueItemResponse
-from app.services.dashboard_service import dashboard_service
 
-
-LOW_CONFIDENCE_THRESHOLD = 0.78
 
 
 def utcnow() -> datetime:
@@ -92,8 +89,6 @@ class ReviewService:
             priority="medium",
             due_at=memory.due_time if memory is not None else None,
             risk_level="medium",
-            ai_generated=True,
-            requires_approval=False,
             meta_payload={"source": "review_queue", "review_id": str(item.id)},
         )
         todo_repository.create(db, todo)
@@ -114,7 +109,6 @@ class ReviewService:
             ),
         )
         db.commit()
-        dashboard_service.invalidate_insight_cache(user_id)
         return self._to_response(db, item)
 
     def enqueue_for_memory(self, db: Session, memory: MemoryItem) -> int:
@@ -137,7 +131,7 @@ class ReviewService:
                     review_type=payload["review_type"],
                     target_type="memory",
                     target_id=memory.id,
-                    ai_suggestion=payload["ai_suggestion"],
+                    suggestion=payload["suggestion"],
                     status="pending",
                     reason=payload["reason"],
                 ),
@@ -186,27 +180,17 @@ class ReviewService:
         )
 
     def _build_memory_review_payloads(self, memory: MemoryItem) -> list[dict]:
-        payloads = []
+        payloads: list[dict] = []
         suggestion = {
             "category": memory.category,
             "tags": list(memory.tags or []),
-            "confidence_score": float(memory.confidence_score),
         }
-
-        if float(memory.confidence_score) < LOW_CONFIDENCE_THRESHOLD:
-            payloads.append(
-                {
-                    "review_type": "low_confidence",
-                    "ai_suggestion": suggestion,
-                    "reason": "这条记录的自动理解置信度偏低，建议确认分类、标签和摘要是否准确。",
-                }
-            )
 
         if memory.category == "project":
             payloads.append(
                 {
                     "review_type": "relation_confirmation",
-                    "ai_suggestion": suggestion,
+                    "suggestion": suggestion,
                     "reason": "项目类记录通常会影响后续回顾和问答，建议确认它是否应该关联到现有项目。",
                 }
             )
@@ -215,7 +199,7 @@ class ReviewService:
             payloads.append(
                 {
                     "review_type": "todo_approval",
-                    "ai_suggestion": suggestion,
+                    "suggestion": suggestion,
                     "reason": "这条记录看起来像一个待办事项，需要你确认后再转成 TODO。",
                 }
             )

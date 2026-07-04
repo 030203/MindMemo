@@ -1,50 +1,135 @@
-import { LogOut, MessageCircle, Search, Settings, Sparkles, UserRound } from "lucide-react";
-import { Link, Outlet } from "react-router-dom";
+import {
+  BellRing,
+  BookOpenText,
+  Brain,
+  CheckSquare,
+  ChevronRight,
+  Inbox,
+  LayoutDashboard,
+  MessageSquare,
+  Search,
+  Settings,
+  Sparkles,
+} from "lucide-react";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useAuth } from "../../auth/AuthProvider";
 
-function openAiDrawer() {
-  window.dispatchEvent(new Event("open-ai-drawer"));
-}
+const navItems = [
+  { to: "/app", icon: LayoutDashboard, label: "工作台", end: true },
+  { to: "/app/inbox", icon: Inbox, label: "收件箱" },
+  { to: "/app/memories", icon: Brain, label: "我的记录" },
+  { to: "/app/todos", icon: CheckSquare, label: "待办" },
+  { to: "/app/reminders", icon: BellRing, label: "提醒" },
+];
 
 export function AppShell() {
   const auth = useAuth();
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const displayName = auth.user?.display_name ?? "我";
+  const initial = displayName.trim().charAt(0).toUpperCase() || "M";
+
+  function handleSearchSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) return;
+    navigate(`/app/memories?q=${encodeURIComponent(q)}`);
+    setSearchQuery("");
+  }
 
   return (
-    <div className="minimal-shell">
-      <header className="minimal-topbar">
-        <Link className="minimal-brand" to="/app">
-          <span className="minimal-brand-mark">
-            <Sparkles size={18} />
+    <div className="studio-layout">
+      <aside className="studio-sidebar">
+        <Link className="studio-brand" to="/app">
+          <span className="studio-brand-mark">
+            <BookOpenText size={18} />
           </span>
-          <span>MindMemo</span>
+          <span className="studio-brand-copy">
+            <strong>MindMemo</strong>
+          </span>
         </Link>
 
-        <div className="minimal-search" aria-label="搜索记录">
-          <Search size={16} />
-          <input placeholder="搜索最近记录..." />
-        </div>
+        <nav className="studio-nav" aria-label="主导航">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) => `studio-nav-item${isActive ? " active" : ""}`}
+            >
+              <item.icon size={18} />
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
 
-        <div className="minimal-actions">
-          <button className="icon-text-button" type="button" onClick={openAiDrawer}>
-            <MessageCircle size={17} />
-            AI
-          </button>
-          <Link className="icon-button" to="/app/settings" aria-label="打开设置" title="设置">
-            <Settings size={17} />
-          </Link>
-          <div className="minimal-user">
-            <UserRound size={16} />
-            <span>{auth.user?.display_name ?? "我"}</span>
+          <span className="studio-nav-divider" />
+
+          <NavLink
+            to="/app/chat"
+            className={({ isActive }) => `studio-nav-item${isActive ? " active" : ""}`}
+          >
+            <Sparkles size={18} />
+            <span>AI 对话</span>
+          </NavLink>
+
+          <span className="studio-nav-divider" />
+
+          <NavLink
+            to="/app/settings"
+            className={({ isActive }) => `studio-nav-item${isActive ? " active" : ""}`}
+          >
+            <Settings size={18} />
+            <span>设置</span>
+          </NavLink>
+        </nav>
+
+        <div className="studio-sidebar-footer">
+          <div className="studio-user-card">
+            <span className="studio-user-avatar">{initial}</span>
+            <div className="studio-user-copy">
+              <strong>{displayName}</strong>
+              <span>{auth.user?.email ?? "个人空间"}</span>
+            </div>
+            <button
+              className="studio-user-action"
+              type="button"
+              onClick={auth.logout}
+              aria-label="退出登录"
+              title="退出登录"
+            >
+              <ChevronRight size={16} />
+            </button>
           </div>
-          <button className="icon-button" type="button" onClick={auth.logout} aria-label="退出登录">
-            <LogOut size={17} />
-          </button>
         </div>
-      </header>
+      </aside>
 
-      <main className="minimal-page">
-        <Outlet />
-      </main>
+      <div className="studio-main">
+        <header className="studio-topbar">
+          <form className="studio-search" onSubmit={handleSearchSubmit}>
+            <Search size={16} />
+            <input
+              placeholder="搜索想法、待办、文件..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </form>
+          <div className="studio-topbar-actions">
+            <Link
+              className="studio-action-button"
+              to="/app/chat"
+            >
+              <MessageSquare size={15} />
+              AI 对话
+            </Link>
+          </div>
+        </header>
+
+        <main className="studio-content">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

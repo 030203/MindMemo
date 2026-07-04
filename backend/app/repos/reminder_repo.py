@@ -44,4 +44,16 @@ class ReminderRepository:
         return reminder
 
 
+    def get_for_user(self, db: Session, user_id: uuid.UUID, reminder_id: uuid.UUID) -> ReminderEvent | None:
+        stmt = select(ReminderEvent).where(
+            ReminderEvent.id == reminder_id,
+            ReminderEvent.user_id == user_id,
+        )
+        return db.execute(stmt).scalar_one_or_none()
+
+    def delete(self, db: Session, reminder: ReminderEvent) -> None:
+        db.delete(reminder)
+        db.flush()
+
+
 reminder_repository = ReminderRepository()

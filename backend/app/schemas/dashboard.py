@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class DashboardOverview(BaseModel):
@@ -13,32 +13,10 @@ class DashboardOverview(BaseModel):
 
 
 class ReminderItem(BaseModel):
+    id: str
     type: str
     level: str
     title: str
     message: str
     todo_id: str
     due_at: datetime | None = None
-
-
-class InsightSourceItem(BaseModel):
-    type: str
-    id: str
-    title: str
-    snippet: str
-    event_time: datetime | None = None
-
-
-class MemoryInsightCard(BaseModel):
-    kind: str
-    title: str
-    value: str
-    detail: str
-    tone: str
-    items: list[str]
-    question: str
-    sources: list[InsightSourceItem] = Field(default_factory=list)
-
-
-class DashboardInsights(BaseModel):
-    cards: list[MemoryInsightCard]

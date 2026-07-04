@@ -1,196 +1,238 @@
-# MindMemo
+# 🌿 MindMemo
 
-MindMemo is a private AI memory workspace for long-term notes, todos, timelines, and grounded AI Q&A.
+> 私人 AI 记忆工作台 —— 随手记录、智能整理、AI 问答，让每一个想法都不被遗忘。
 
-## Current status
+MindMemo 是一个面向个人知识管理的 AI 增强型笔记系统。你可以用它快速记录想法、待办和灵感，系统会自动提取标签、关键词和实体，并通过 AI 对话帮助你检索、总结和关联你的记录。
 
-This repository now includes:
+---
 
-- a complete product requirements and system design document
-- a FastAPI backend with auth, memory persistence, timeline, todos, and grounded Q&A
-- a React + Vite frontend with a Chinese-first everyday memo experience
-- embedding persistence, similarity retrieval, and PostgreSQL + `pgvector` validation
-- source-linked AI answers that can jump back to the original memory record
-- Memory Relation v1 for explainable related-memory links in detail pages
-- Phase 12 insight APIs and source-linked dashboard cards for expense, reflection, learning, and project views
+## ✨ 核心功能
 
-## Verified locally
+### 📝 快速记录
+- 随手记、待办、提醒三种模式一键切换
+- 支持文字、文件附件（PDF/DOCX/TXT）、网页导入
+- 自动提取标签、关键词、实体，智能分类
 
-The current local environment has already been verified with:
+### 📋 我的记录
+- 水彩风插画卡片，每条记录随机匹配自然主题插画
+- 按分类筛选（随手记 / 学习记录 / 项目进展 / 灵感）
+- 关键词搜索 + 全文检索
 
-- frontend running at [http://127.0.0.1:6100](http://127.0.0.1:6100)
-- backend running at [http://127.0.0.1:6200](http://127.0.0.1:6200)
-- real login flow with refresh-token renewal
-- live memory writes through HTTP API
-- PostgreSQL row growth in both `memory_items` and `memory_chunks`
-- `pgvector` readiness and retrieval smoke tests
-- grounded Q&A with citations
-- related-memory graph edges generated from shared facts, topics, entities, categories, and timeline proximity
-- repaired Chinese UI copy on the main user-facing pages
+### ✅ 待办管理
+- 优先级排序、状态流转（待办 → 进行中 → 完成）
+- 截止日期提醒，逾期自动标红
+- 从记录一键转为待办
 
-## Project structure
+### 🔔 智能提醒
+- 系统自动从待办中识别即将到期、逾期、紧急事项
+- 支持推迟提醒（1小时 / 明天 / 下周）
+- 外部通知：PushDeer / ServerChan / 企业微信
 
-```text
-docs/                    Product, architecture, and standards documents
-docs/standards/          Development rules, process, and acceptance standards
-dev_logs/                Daily development logs
-frontend/                React + Vite application
-backend/                 FastAPI application
+### 🤖 AI 对话
+- 三栏布局：会话列表 / 对话区 / 上下文面板
+- 基于你的所有记录进行 RAG 问答
+- SSE 流式输出，实时显示回答
+- 会话管理：新建、重命名、置顶、删除
+
+### 📊 AI 洞察
+- 智能分析你的记录模式，生成学习路线图
+- 费用、反思、学习、项目多维度洞察卡片
+- 带源链接，一键跳转到原始记录
+
+---
+
+## 🛠 技术栈
+
+| 层 | 技术 |
+|---|---|
+| **前端** | React 18 + TypeScript + Vite + TanStack Query |
+| **后端** | Python FastAPI + SQLAlchemy + PostgreSQL |
+| **AI/LLM** | 小米 MiMo (mimo-v2.5) / OpenAI 兼容 API |
+| **向量检索** | pgvector + HNSW 索引 |
+| **认证** | JWT (access + refresh token) |
+| **通知** | PushDeer / ServerChan / 企业微信 Webhook |
+
+### 前端架构
+```
+src/
+├── pages/          # 页面组件（Dashboard / Memories / Chat / Todos / Reminders / Settings）
+├── components/     # 可复用组件（AppShell / MarkdownRenderer / AiChatModal）
+├── api/            # API 客户端 + 类型定义
+├── styles/         # 按页面拆分的 CSS（自然绿色主题）
+├── auth/           # 认证逻辑（token 存储 + 自动刷新）
+└── utils/          # 工具函数（时间格式化 / 资源 URL 解析）
 ```
 
-## Project operating files
+### 后端架构
+```
+app/
+├── api/v1/         # REST 端点（auth / memories / todos / chat / qa / insights / reminders）
+├── services/       # 业务逻辑层（LLM / 提醒调度 / 通知 / 洞察）
+├── models/         # SQLAlchemy ORM 模型
+├── repos/          # 数据访问层
+├── schemas/        # Pydantic 请求/响应模型
+├── orchestration/  # QA 工作流（路由 → 检索 → 回答）
+└── tools/          # Agent 工具（记忆搜索 / 天气 / 网页搜索）
+```
 
-- [PROJECT_WORK_GUIDE.md](PROJECT_WORK_GUIDE.md)
-- [docs/standards/00_文档导航.md](docs/standards/00_文档导航.md)
-- [docs/MySecondBrain_需求分析_V1.1.md](docs/MySecondBrain_需求分析_V1.1.md)
-- [dev_logs/README.md](dev_logs/README.md)
+---
 
-## Start the project
+## 🚀 快速开始
 
-### Backend
+### 环境要求
+- Python 3.11+
+- Node.js 18+
+- PostgreSQL 15+ (with pgvector extension)
 
-Install dependencies:
+### 后端
 
-```powershell
+```bash
 cd backend
-python -m pip install -r requirements.txt
+
+# 安装依赖
+pip install -r requirements.txt
+
+# 配置环境变量（参考 .env.example）
+cp .env.example .env
+# 编辑 .env 填入数据库连接、LLM API Key 等
+
+# 启动服务
+python -m uvicorn app.main:app --host 127.0.0.1 --port 6200 --reload
 ```
 
-Run with the current `.env`:
+### 前端
 
-```powershell
-python -m uvicorn app.main:app --host 127.0.0.1 --port 6200
-```
-
-### Frontend
-
-```powershell
+```bash
 cd frontend
+
+# 安装依赖
 npm install
+
+# 启动开发服务器
 npm run dev -- --host 127.0.0.1 --port 6100
 ```
 
-## Local URLs
+### 访问地址
+- 前端：[http://127.0.0.1:6100](http://127.0.0.1:6100)
+- 后端 API 文档：[http://127.0.0.1:6200/docs](http://127.0.0.1:6200/docs)
+- 健康检查：[http://127.0.0.1:6200/health](http://127.0.0.1:6200/health)
 
-- Frontend: [http://127.0.0.1:6100](http://127.0.0.1:6100)
-- Backend health: [http://127.0.0.1:6200/health](http://127.0.0.1:6200/health)
-- Backend docs: [http://127.0.0.1:6200/docs](http://127.0.0.1:6200/docs)
+---
 
-## Auth notes
+## ⚙️ 环境变量说明
 
-- Backend access now expects a real login by default.
-- Temporary anonymous fallback is still available only when `ALLOW_DEV_DEMO_USER=true`.
-- Access token and refresh token are issued separately.
-- The frontend will try a silent refresh before redirecting to `/auth`.
-- Demo account:
-  - email: `demo@example.com`
-  - password: `demo123456`
+### 核心配置
 
-## Retrieval and pgvector notes
+| 变量 | 说明 | 默认值 |
+|---|---|---|
+| `DATABASE_URL` | PostgreSQL 连接串 | `postgresql+psycopg://...` |
+| `FRONTEND_ORIGIN` | 前端地址（CORS） | `http://127.0.0.1:6100` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | 访问令牌过期时间 | `10080`（7天） |
 
-- The backend stores chunk embeddings in `memory_chunks.embedding`.
-- Default local embedding mode is `EMBEDDING_PROVIDER=local_hash`.
-- Compatible remote embeddings can be enabled with:
-  - `OPENAI_BASE_URL`
-  - `OPENAI_API_KEY`
-  - `EMBEDDING_MODEL`
-- PostgreSQL mode prepares:
-  - `CREATE EXTENSION IF NOT EXISTS vector`
-  - HNSW index on `memory_chunks.embedding`
-  - btree index on `(user_id, created_at DESC)`
+### LLM 配置
 
-Useful commands:
+| 变量 | 说明 |
+|---|---|
+| `LLM_PROVIDER` | 内部任务 provider（`xiaomi` / `deepseek`） |
+| `LLM_USER_FACING_PROVIDER` | 用户可见回答的 provider |
+| `LLM_USER_FACING_MODEL` | 用户可见回答的模型名 |
+| `XIAOMI_BASE_URL` | 小米 MiMo API 地址 |
+| `XIAOMI_API_KEYS` | 小米 API Key（逗号分隔，自动轮询） |
+| `XIAOMI_MODEL` | 小米模型名（如 `mimo-v2.5`） |
+| `OPENAI_BASE_URL` | OpenAI 兼容 API 地址 |
+| `OPENAI_API_KEY` | OpenAI API Key |
 
-```powershell
-cd backend
-python scripts/check_pgvector_ready.py
-python scripts/smoke_test_pgvector.py
-python scripts/smoke_test_phase6.py
-python scripts/smoke_test_phase7_facts.py
-python scripts/smoke_test_phase7_insights.py
-python scripts/smoke_test_phase7_dashboard_insights.py
-python scripts/smoke_test_phase7_signal_timeline.py
-python scripts/eval_retrieval.py
-python scripts/eval_qa_grounding.py
-python scripts/eval_relation_expansion.py
-python scripts/smoke_test_phase9_traces.py
-python scripts/smoke_test_external_tools.py
-python scripts/smoke_test_phase10_relations.py
-python scripts/smoke_test_phase10_relation_qa.py
-python scripts/smoke_test_phase10_understanding.py
-python scripts/smoke_test_phase10_citation_rerank.py
-python scripts/smoke_test_phase11_agent_runs.py
-python scripts/smoke_test_phase12_insights_api.py
-python scripts/backfill_memory_understanding.py
+### Embedding 配置
+
+| 变量 | 说明 |
+|---|---|
+| `EMBEDDING_PROVIDER` | 嵌入模式（`openai_compatible` / `local_hash`） |
+| `EMBEDDING_BASE_URL` | 嵌入 API 地址 |
+| `EMBEDDING_MODEL` | 嵌入模型名 |
+| `EMBEDDING_DIMENSION` | 向量维度（如 `1536`） |
+
+### 通知配置
+
+| 变量 | 说明 |
+|---|---|
+| `PUSHDEER_PUSHKEY` | PushDeer 推送 Key |
+| `SERVERCHAN_SENDKEY` | ServerChan 微信推送 Key |
+| `SERVERCHAN_ENDPOINT_BASE` | ServerChan API 地址 |
+| `WECOM_WEBHOOK_URL` | 企业微信群机器人 Webhook |
+
+---
+
+## 📡 主要 API 端点
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| `POST` | `/api/v1/auth/login` | 用户登录 |
+| `POST` | `/api/v1/auth/register` | 用户注册 |
+| `GET` | `/api/v1/memories` | 获取记忆列表（支持搜索/分类筛选） |
+| `POST` | `/api/v1/ingest/text` | 快速文字记录 |
+| `POST` | `/api/v1/ingest/capture` | 带附件记录（multipart） |
+| `GET` | `/api/v1/memories/{id}` | 记忆详情 |
+| `GET` | `/api/v1/memories/{id}/related` | 关联记忆 |
+| `GET/POST/PATCH/DELETE` | `/api/v1/todos` | 待办 CRUD |
+| `GET` | `/api/v1/dashboard/reminders` | 提醒列表 |
+| `PATCH/DELETE` | `/api/v1/dashboard/reminders/{id}` | 修改/删除提醒 |
+| `GET/POST` | `/api/v1/chat/sessions` | 对话会话管理 |
+| `POST` | `/api/v1/chat/sessions/{id}/ask-stream` | SSE 流式问答 |
+| `POST` | `/api/v1/qa/ask` | 基于记忆的问答 |
+| `GET` | `/api/v1/insights/overview` | AI 洞察概览 |
+
+---
+
+## 🎨 设计语言
+
+项目采用自然绿色主题：
+
+| 角色 | 色值 |
+|---|---|
+| 主色 | `#6b9e7a` |
+| 深色 | `#2d6a4f` |
+| 浅色 | `#8cb89c` |
+| 淡绿背景 | `#e8f0e4` |
+| 暖米色背景 | `#faf9f7` / `#f0efec` |
+
+- 水彩风 SVG 插画装饰（叶子、山峦、灯泡等 8 种随机图案）
+- 圆角卡片 + 柔和阴影
+- 宽松间距，大字体（标题 ≥ 1.05rem，正文 ≥ 0.9rem）
+
+---
+
+## 📁 项目结构
+
+```
+MindMemo/
+├── frontend/               # React + Vite 前端
+│   ├── src/
+│   │   ├── pages/          # 页面组件
+│   │   ├── components/     # 可复用组件
+│   │   ├── api/            # API 客户端
+│   │   ├── styles/         # CSS 样式
+│   │   ├── auth/           # 认证模块
+│   │   └── utils/          # 工具函数
+│   ├── package.json
+│   └── vite.config.ts
+├── backend/                # FastAPI 后端
+│   ├── app/
+│   │   ├── api/v1/         # REST API
+│   │   ├── services/       # 业务逻辑
+│   │   ├── models/         # 数据模型
+│   │   ├── repos/          # 数据访问
+│   │   ├── schemas/        # 请求/响应类型
+│   │   ├── orchestration/  # QA 编排
+│   │   └── tools/          # Agent 工具
+│   ├── scripts/            # 测试/评估脚本
+│   ├── requirements.txt
+│   └── .env                # 环境配置
+├── docs/                   # 设计文档
+└── README.md
 ```
 
-`smoke_test_phase6.py` does not send external notifications by default. To send exactly one test notification through a configured channel, pass `--send-notification serverchan`, `--send-notification pushdeer`, or `--send-notification wecom`.
+---
 
-Supporting local PostgreSQL files:
+## 📄 License
 
-- `backend/docker-compose.pgvector.yml`
-- `backend/scripts/check_pgvector_ready.py`
-- `backend/scripts/smoke_test_pgvector.py`
-
-## Grounded Q&A notes
-
-- `/api/v1/qa/ask` now has:
-  1. retrieval and citation selection
-  2. grounded LLM answer generation
-- When model configuration is available, the backend sends only retrieved memory snippets to the LLM.
-- If the LLM request fails, the API safely falls back to rule-based answer assembly.
-- Frontend answers now show citation cards and support jumping into the original memory detail page.
-- `hybrid_web` can now call configured Tavily web search and OpenWeather current weather tools, while still returning source citations.
-- Memory-only QA now expands context through related-memory edges and stores the retrieval strategy in trace metadata.
-- Memory citations are reranked with `citation_rerank_v1`, balancing direct chunk score, relation score, recency, and fact confidence.
-- Chat QA requests can include recent conversation context, allowing short follow-up questions to be rewritten into a grounded retrieval query.
-- QA grounding eval now checks citation hits, answer quality terms, forbidden terms, and follow-up context usage.
-- Chat trace UI now shows follow-up query rewriting and Agent workflow steps for routing, retrieval, relation expansion, reranking, and answer generation.
-- Phase 11 Agent runs are now persisted in `agent_runs` and `agent_run_steps`, with QA traces linking back through `agent_run_id`.
-- Personal insight answers now reuse source-linked dashboard insight cards, so Phase 12 answers can jump back to memory and todo evidence instead of only showing abstract insight labels.
-
-## Insight API notes
-
-- Phase 12 now exposes:
-  - `/api/v1/insights/overview`
-  - `/api/v1/insights/expenses`
-  - `/api/v1/insights/reflection`
-- Each insight card now includes source anchors that point back to the underlying memory or todo records.
-- The dashboard homepage consumes `/api/v1/insights/overview`, keeping the card experience aligned with the standalone insight APIs.
-- Insight cards are cached per user and time window with a short TTL, and the cache is invalidated when memories or todos change.
-
-## Memory graph notes
-
-- `memory_relations` stores lightweight, explainable edges between memories.
-- Relation scoring currently uses shared tags, keywords, topics, entities, extracted facts, category match, and temporal proximity.
-- Memory detail pages call `/api/v1/memories/{memory_id}/related` to show related memories.
-- `/api/v1/memories/{memory_id}/relations/rebuild` can rebuild one memory's relation edges after parser changes.
-- QA traces can show `chunk_v1+relation_expand_v1` and `citation_rerank_v1` when related memories were added and citations were reranked.
-- `scripts/backfill_memory_understanding.py` rebuilds existing memory tags, keywords, entities, chunks, facts, and relations after extractor changes.
-- `scripts/eval_relation_expansion.py` now separates overall context hit rate from relation-expansion hit rate, and also reports expansion precision and expansion-only noise-free rate.
-
-## Reminder notification notes
-
-- The backend scheduler now persists reminder events and can deliver unsent reminders through PushDeer.
-- ServerChan Turbo delivery is available through `SERVERCHAN_SENDKEY`.
-- Enterprise WeChat group bot delivery is also available through `WECOM_WEBHOOK_URL`.
-- In-app reminders continue to work without external configuration.
-- To enable external notifications, set `PUSHDEER_PUSHKEY` in `backend/.env`.
-- To enable ServerChan WeChat notifications, set `SERVERCHAN_SENDKEY` and enable the ServerChan channel on the Settings page.
-- To enable Enterprise WeChat group notifications, set `WECOM_WEBHOOK_URL` and enable the WeCom channel on the Settings page.
-- Delivery is idempotent at the reminder-event level: successfully sent reminders are marked with `sent_at`.
-- Users can opt in to PushDeer on the Settings page; new users keep only in-app reminders by default.
-- The Settings page can send a one-time test notification for configured external channels.
-
-## Review Queue notes
-
-- Review Queue items are now generated by a shared backend service.
-- The scheduler backfills missing review items for active memories.
-- Current MVP triggers include low-confidence memory understanding, project relation confirmation, and todo-candidate approval.
-- Users can now confirm, ignore, or convert pending review items into TODOs.
-
-## Next recommended implementation steps
-
-1. Add step timing/error instrumentation beyond the current completed-run baseline.
-2. Extend query planning beyond context rewriting into explicit sub-question and tool-selection plans.
-3. Add refresh-token revocation and device session management for non-demo environments.
+MIT

@@ -19,8 +19,11 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     avatar_url: Mapped[str | None] = mapped_column(nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="active", nullable=False)
     last_login_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    last_maintenance_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
     settings: Mapped["UserSetting"] = relationship(back_populates="user", uselist=False)
+    goals: Mapped[list["Goal"]] = relationship("Goal", back_populates="user")
+    insights: Mapped[list["Insight"]] = relationship("Insight", back_populates="user")
 
 
 class UserSetting(Base, TimestampMixin):
@@ -34,10 +37,8 @@ class UserSetting(Base, TimestampMixin):
     language: Mapped[str] = mapped_column(String(16), default="zh-CN", nullable=False)
     quiet_hours: Mapped[dict | None] = mapped_column(JSON_VARIANT, nullable=True)
     notify_channels: Mapped[list | None] = mapped_column(JSON_VARIANT, nullable=True)
-    llm_provider: Mapped[str] = mapped_column(String(32), default="deepseek", nullable=False)
-    llm_model: Mapped[str] = mapped_column(String(64), nullable=False)
-    auto_tag_enabled: Mapped[bool] = mapped_column(default=True, nullable=False)
-    auto_summary_enabled: Mapped[bool] = mapped_column(default=True, nullable=False)
-    web_search_enabled: Mapped[bool] = mapped_column(default=False, nullable=False)
+    # DB still has these columns; kept for compatibility, no longer used in app logic
+    llm_provider: Mapped[str] = mapped_column("llm_provider", String(32), default="deepseek", nullable=False)
+    llm_model: Mapped[str] = mapped_column("llm_model", String(64), default="deepseek-chat", nullable=False)
 
     user: Mapped[User] = relationship(back_populates="settings")

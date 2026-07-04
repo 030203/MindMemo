@@ -1,52 +1,54 @@
-from fastapi import APIRouter, Depends, HTTPException, Path, Query
+"""
+Insights API - 洞察管理端点
+
+职责：
+  POST /insights/generate → 手动触发 Insight Agent 生成最近洞察
+  GET  /insights          → 读取已生成的洞察列表
+"""
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.deps import get_current_user_id
 from app.schemas.common import ApiResponse
-from app.schemas.dashboard import DashboardInsights, MemoryInsightCard
-from app.services.dashboard_service import dashboard_service
+from app.services.insight_agent_service import insight_agent
+from app.repos.insight_repo import insight_repository
 
 router = APIRouter()
-WINDOW_PATTERN = "^(default|7d|30d|90d|month|all)$"
-INSIGHT_KIND_PATTERN = "^(expense|mood|learning|plan|project)$"
 
 
-@router.get("/overview")
-def get_insight_overview(
-    window: str = Query(default="default", pattern=WINDOW_PATTERN),
+@router.post("/generate")
+async def generate_insight(
     db: Session = Depends(get_db),
     user_id=Depends(get_current_user_id),
-) -> ApiResponse[DashboardInsights]:
-    return ApiResponse(data=dashboard_service.get_insight_overview(db, user_id, window=window))
+) -> ApiResponse:
+    """手动触发 Insight Agent 生成最近 7 天的洞察。"""
+    result = await insight_agent.generate_insight(
+        db=db,
+        user_id=user_id,
+        days=7,
+    )
+    return ApiResponse(data=result)
 
 
-@router.get("/expenses")
-def get_expense_insights(
-    window: str = Query(default="default", pattern=WINDOW_PATTERN),
+@router.get("/")
+def list_insights(
     db: Session = Depends(get_db),
     user_id=Depends(get_current_user_id),
-) -> ApiResponse[DashboardInsights]:
-    return ApiResponse(data=dashboard_service.get_expense_insights(db, user_id, window=window))
-
-
-@router.get("/reflection")
-def get_reflection_insights(
-    window: str = Query(default="default", pattern=WINDOW_PATTERN),
-    db: Session = Depends(get_db),
-    user_id=Depends(get_current_user_id),
-) -> ApiResponse[DashboardInsights]:
-    return ApiResponse(data=dashboard_service.get_reflection_insights(db, user_id, window=window))
-
-
-@router.get("/{kind}")
-def get_insight_card(
-    kind: str = Path(pattern=INSIGHT_KIND_PATTERN),
-    window: str = Query(default="default", pattern=WINDOW_PATTERN),
-    db: Session = Depends(get_db),
-    user_id=Depends(get_current_user_id),
-) -> ApiResponse[MemoryInsightCard]:
-    card = dashboard_service.get_insight_card(db, user_id, kind=kind, window=window)
-    if card is None:
-        raise HTTPException(status_code=404, detail="Insight card not found")
-    return ApiResponse(data=card)
+    days: int = 7,
+) -> ApiResponse:
+    """读取最近 N 天的洞察列表。"""
+    insights = insight_repository.get_recent(db, user_id, days=days)
+    return ApiResponse(data=[
+        {
+            "id": str(i.id),
+            "insight_type": i.insight_type,
+            "title": i.title,
+            "content": i.content,
+            "confidence": i.confidence_score,
+            "created_at": i.created_at.isoformat() if i.created_at else None,
+        }
+        for i in insights
+    ])

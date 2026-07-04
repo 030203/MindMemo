@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CalendarDays, ExternalLink, FileText, Hash, Image as ImageIcon, Link2, Network, PencilLine, Sparkles, Tags, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarDays, ExternalLink, FileText, Hash, Image as ImageIcon, Link2, MessageSquare, PencilLine, Sparkles, Tags, Trash2 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
-import type { ExtractedFact, MemoryDetail } from "../api/types";
+import type { MemoryDetail } from "../api/types";
 import { isImageSource, resolveAssetUrl } from "../utils/media";
 import { describeImportance, formatCategory, formatDateTimeLong, formatMemoryStatus } from "../utils/presentation";
+import { AiChatModal } from "../components/AiChatModal";
 
 const categoryOptions = [
   { value: "memo", label: "随手记" },
@@ -14,13 +15,6 @@ const categoryOptions = [
   { value: "idea", label: "灵感" },
 ];
 
-const factTypeLabels: Record<string, string> = {
-  expense: "消费",
-  mood: "情绪 / 状态",
-  learning: "学习主题",
-  plan: "计划候选",
-};
-
 function formatSourceType(sourceType: string) {
   if (sourceType === "url") {
     return "网页导入";
@@ -28,7 +22,7 @@ function formatSourceType(sourceType: string) {
   if (sourceType === "pdf") {
     return "PDF 导入";
   }
-  if (sourceType === "file") {
+  if (sourceType === "file" || sourceType === "document") {
     return "文件导入";
   }
   if (sourceType === "image") {
@@ -37,44 +31,11 @@ function formatSourceType(sourceType: string) {
   return "手动记录";
 }
 
-function formatRelationType(type: string) {
-  const labels: Record<string, string> = {
-    shared_fact: "结构化事实相近",
-    shared_semantic_signal: "语义线索相近",
-    same_category: "同类记忆",
-    temporal_neighbor: "时间相邻",
-    weak_context: "弱关联",
-  };
-  return labels[type] ?? type;
-}
-
-function formatFactPayload(fact: ExtractedFact) {
-  const payload = fact.structured_payload;
-  if (fact.fact_type === "expense") {
-    const amount = typeof payload.amount === "number" ? `${payload.amount} 元` : "金额未知";
-    const category = typeof payload.category === "string" ? payload.category : "other";
-    return `${amount} · ${category}`;
-  }
-  if (fact.fact_type === "mood") {
-    const label = typeof payload.label === "string" ? payload.label : fact.title;
-    const valence = typeof payload.valence === "number" ? `情绪值 ${payload.valence}` : "情绪值未知";
-    return `${label} · ${valence}`;
-  }
-  if (fact.fact_type === "learning") {
-    const topics = Array.isArray(payload.topics) ? payload.topics.join(" / ") : "";
-    return topics || "暂未识别具体主题";
-  }
-  if (fact.fact_type === "plan") {
-    return typeof payload.due_time === "string" && payload.due_time ? `预计时间 ${formatDateTimeLong(payload.due_time)}` : "待确认时间";
-  }
-  return JSON.stringify(payload);
-}
-
 const documentFilePattern = /\.(md|markdown|txt|pdf|docx?|csv|json|yaml|yml|log)\b/i;
 const documentMimePattern = /(text\/|application\/pdf|application\/msword|application\/vnd|officedocument|markdown|pdf|json|csv)/i;
 
 function isDocumentSource(sourceType: string) {
-  return ["file", "pdf", "url"].includes(sourceType);
+  return ["file", "pdf", "url", "document"].includes(sourceType);
 }
 
 function looksLikeDocumentMemory(memory: Pick<MemoryDetail, "source_type" | "title" | "content_raw" | "file_name" | "source_url">) {
@@ -120,16 +81,11 @@ export function MemoryDetailPage() {
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("memo");
   const [formError, setFormError] = useState("");
+  const [showAiChat, setShowAiChat] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["memory-detail", memoryId],
     queryFn: () => api.getMemoryDetail(memoryId),
-    enabled: Boolean(memoryId),
-  });
-
-  const { data: relatedMemories = [], isLoading: isRelatedLoading } = useQuery({
-    queryKey: ["memory-related", memoryId],
-    queryFn: () => api.listRelatedMemories(memoryId),
     enabled: Boolean(memoryId),
   });
 
@@ -155,7 +111,6 @@ export function MemoryDetailPage() {
       setIsEditing(false);
       queryClient.setQueryData(["memory-detail", memoryId], updated);
       queryClient.invalidateQueries({ queryKey: ["memories"] });
-      queryClient.invalidateQueries({ queryKey: ["memory-related", memoryId] });
       queryClient.invalidateQueries({ queryKey: ["timeline"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-overview"] });
     },
@@ -250,6 +205,10 @@ export function MemoryDetailPage() {
             <button className="button-ghost danger-button" type="button" onClick={handleDelete} disabled={deleteMemory.isPending}>
               <Trash2 size={16} />
               {deleteMemory.isPending ? "删除中..." : "删除记录"}
+            </button>
+            <button className="button button-ai-chat" type="button" onClick={() => setShowAiChat(true)}>
+              <MessageSquare size={16} />
+              AI 对话
             </button>
           </div>
           {deleteMemory.isError ? <div className="error">删除失败，请稍后再试。</div> : null}
@@ -395,70 +354,6 @@ export function MemoryDetailPage() {
             <p className="detail-body">{memory.content_raw}</p>
           )}
         </article>
-        <aside className="memory-detail-surface ai-facts-surface">
-          <div className="detail-surface-title">
-            <Sparkles size={18} />
-            <h3>AI 理解结果</h3>
-          </div>
-          {memory.extracted_facts.length === 0 ? (
-            <div className="empty-state">这条记录还没有抽取出结构化事实。</div>
-          ) : (
-            <div className="detail-fact-list">
-              {memory.extracted_facts.map((fact) => (
-                <div className="detail-fact-card" key={fact.id}>
-                  <div className="list-item-header">
-                    <strong>{fact.title}</strong>
-                    <span>{factTypeLabels[fact.fact_type] ?? fact.fact_type}</span>
-                  </div>
-                  <p>{formatFactPayload(fact)}</p>
-                  <div className="inline-meta">
-                    <span>置信度 {Math.round(fact.confidence_score * 100)}%</span>
-                    <span>{formatDateTimeLong(fact.event_time)}</span>
-                    <span>{fact.source}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </aside>
-      </section>
-
-      <section className="memory-detail-surface related-memory-surface">
-        <div className="section-title">
-          <div>
-            <div className="detail-surface-title">
-              <Network size={18} />
-              <h3>相关记忆</h3>
-            </div>
-            <p className="panel-subtitle">系统会把共享事实、主题、实体或时间线相近的内容连接起来，帮助后续 Agent 做上下文推理。</p>
-          </div>
-          <span className="detail-count-pill">
-            <Network size={14} />
-            {relatedMemories.length} 条
-          </span>
-        </div>
-        {isRelatedLoading ? (
-          <div className="empty-state">正在整理这条记忆的上下文关系...</div>
-        ) : relatedMemories.length === 0 ? (
-          <div className="empty-state">还没有明显相关的记忆。继续记录后，关系网络会慢慢变得更有用。</div>
-        ) : (
-          <div className="related-memory-grid">
-            {relatedMemories.map((item) => (
-              <Link className="related-memory-card" key={item.id} to={`/app/memories/${item.id}`}>
-                <div className="list-item-header">
-                  <strong>{item.title}</strong>
-                  <span>{formatRelationType(item.relation_type)}</span>
-                </div>
-                <p>{item.content_summary}</p>
-                <div className="inline-meta">
-                  <span>关联度 {Math.round(item.score * 100)}%</span>
-                  <span>{formatCategory(item.category)}</span>
-                  <span>{formatDateTimeLong(item.event_time)}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
       </section>
 
       <section className="memory-detail-bottom-grid">
@@ -494,6 +389,13 @@ export function MemoryDetailPage() {
           </div>
         </div>
       </section>
+      {showAiChat ? (
+        <AiChatModal
+          memoryId={memoryId}
+          memoryTitle={memory.title}
+          onClose={() => setShowAiChat(false)}
+        />
+      ) : null}
     </div>
   );
 }

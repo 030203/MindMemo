@@ -7,13 +7,14 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.router import api_router
 from app.core.config import settings
-from app.services.bootstrap import initialize_database
+from app.services.bootstrap import initialize_database, initialize_tools
 from app.services.reminder_scheduler import reminder_scheduler
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     initialize_database()
+    initialize_tools()
     await reminder_scheduler.start()
     try:
         yield

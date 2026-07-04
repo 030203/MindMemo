@@ -7,19 +7,9 @@ from sqlalchemy.orm import Session
 
 from app.models.memory import MemoryItem
 from app.models.timeline import TimelineEvent
-from app.models.todo import TodoItem
-from app.repos.fact_repo import fact_repository
 from app.repos.memory_repo import memory_repository
-from app.repos.reminder_repo import reminder_repository
 from app.repos.timeline_repo import timeline_repository
-from app.repos.todo_repo import todo_repository
-from app.schemas.memory import ExtractedFactResponse, MemoryCreateRequest, MemoryDetail, MemoryListItem, MemoryUpdateRequest
-from app.services.chunk_service import chunk_service
-from app.services.dashboard_service import dashboard_service
-from app.services.fact_extraction_service import fact_extraction_service
-from app.services.memory_relation_service import memory_relation_service
-from app.services.memory_understanding_service import memory_understanding_service
-from app.services.reminder_service import reminder_service
+from app.schemas.memory import MemoryCreateRequest, MemoryDetail, MemoryListItem, MemoryUpdateRequest
 from app.services.review_service import review_service
 
 
@@ -61,25 +51,12 @@ def _to_memory_list_item(memory: MemoryItem) -> MemoryListItem:
     )
 
 
-def _to_fact_response(fact) -> ExtractedFactResponse:
-    return ExtractedFactResponse(
-        id=str(fact.id),
-        fact_type=fact.fact_type,
-        title=fact.title,
-        structured_payload=dict(fact.structured_payload or {}),
-        confidence_score=float(fact.confidence_score),
-        event_time=fact.event_time,
-        source=fact.source,
-    )
-
-
-def _to_memory_detail(memory: MemoryItem, facts=None) -> MemoryDetail:
+def _to_memory_detail(memory: MemoryItem) -> MemoryDetail:
     return MemoryDetail(
         **_to_memory_list_item(memory).model_dump(),
         content_raw=memory.content_raw,
         keywords=list(memory.keywords or []),
         entities=list(memory.entities or []),
-        extracted_facts=[_to_fact_response(fact) for fact in (facts or [])],
     )
 
 
@@ -98,8 +75,7 @@ class MemoryService:
         memory = memory_repository.get_for_user(db, user_id, uuid.UUID(memory_id))
         if memory is None:
             return None
-        facts = fact_repository.list_for_memory(db, user_id, memory.id)
-        return _to_memory_detail(memory, facts)
+        return _to_memory_detail(memory)
 
     def get_memory_model(self, db: Session, user_id: uuid.UUID, memory_id: str) -> MemoryItem | None:
         return memory_repository.get_for_user(db, user_id, uuid.UUID(memory_id))
@@ -151,38 +127,6 @@ class MemoryService:
             timeline_title=f"{source_label}：{title.strip() or '未命名记录'}",
         )
 
-    def sync_memory_todos(self, db: Session, user_id: uuid.UUID | None = None) -> int:
-        synced = 0
-        for memory in memory_repository.list_all_active(db):
-            if user_id is not None and memory.user_id != user_id:
-                continue
-            content = (memory.content_clean or memory.content_raw or "").strip()
-            if not content:
-                continue
-
-            plan_metadata = fact_extraction_service.extract_plan_metadata(content, memory.event_time or memory.created_at)
-            if not plan_metadata["is_todo_candidate"]:
-                archived = self._archive_auto_todo_for_memory(db, memory)
-                if memory.is_todo_candidate:
-                    memory.is_todo_candidate = False
-                    memory.due_time = None
-                    synced += 1
-                else:
-                    synced += archived
-                continue
-
-            memory.is_todo_candidate = True
-            memory.due_time = plan_metadata["due_time"]
-            self._sync_todo_for_memory(db, memory)
-            synced += 1
-
-        if synced > 0:
-            db.commit()
-            dashboard_service.invalidate_insight_cache(user_id)
-        else:
-            db.flush()
-        return synced
-
     def update_memory(
         self,
         db: Session,
@@ -195,24 +139,14 @@ class MemoryService:
             return None
 
         normalized_content = payload.content.strip()
-        understanding = memory_understanding_service.understand(normalized_content, payload.category)
-        plan_metadata = fact_extraction_service.extract_plan_metadata(normalized_content, memory.event_time or utcnow())
 
         memory.title = payload.title.strip() or memory.title
         memory.content_raw = payload.content
         memory.content_clean = normalized_content
         memory.content_summary = _summarize(payload.content)
         memory.category = payload.category
-        memory.tags = understanding.tags
-        memory.keywords = understanding.keywords
-        memory.entities = understanding.entities
-        memory.is_todo_candidate = plan_metadata["is_todo_candidate"]
-        memory.due_time = plan_metadata["due_time"]
+        memory.tags = _derive_tags(normalized_content, payload.category)
 
-        chunk_service.rebuild_chunks_for_memory(db, memory)
-        fact_extraction_service.rebuild_facts_for_memory(db, memory)
-        memory_relation_service.rebuild_for_memory(db, user_id, memory)
-        self._sync_todo_for_memory(db, memory)
         timeline_repository.create(
             db,
             TimelineEvent(
@@ -227,10 +161,8 @@ class MemoryService:
         )
 
         db.commit()
-        dashboard_service.invalidate_insight_cache(user_id)
         db.refresh(memory)
-        facts = fact_repository.list_for_memory(db, user_id, memory.id)
-        return _to_memory_detail(memory, facts)
+        return _to_memory_detail(memory)
 
     def delete_memory(self, db: Session, user_id: uuid.UUID, memory_id: str) -> bool:
         memory = memory_repository.get_for_user(db, user_id, uuid.UUID(memory_id))
@@ -240,7 +172,6 @@ class MemoryService:
         now = utcnow()
         memory.deleted_at = now
         memory.status = "deleted"
-        self._archive_auto_todo_for_memory(db, memory)
         timeline_repository.create(
             db,
             TimelineEvent(
@@ -255,7 +186,6 @@ class MemoryService:
         )
 
         db.commit()
-        dashboard_service.invalidate_insight_cache(user_id)
         return True
 
     def _create_memory_record(
@@ -272,9 +202,7 @@ class MemoryService:
     ) -> MemoryDetail:
         normalized_title = title.strip() or "Untitled Memory"
         normalized_content = content.strip()
-        understanding = memory_understanding_service.understand(normalized_content, category)
         now = utcnow()
-        plan_metadata = fact_extraction_service.extract_plan_metadata(normalized_content, now)
 
         memory = MemoryItem(
             user_id=user_id,
@@ -284,22 +212,18 @@ class MemoryService:
             content_clean=normalized_content,
             content_summary=_summarize(content),
             category=category,
-            tags=understanding.tags,
-            keywords=understanding.keywords,
-            entities=understanding.entities,
+            tags=_derive_tags(normalized_content, category),
+            keywords=[],
+            entities=[],
             time_info=time_info,
             importance_score=0.76,
-            confidence_score=0.82,
             status="active",
-            is_todo_candidate=plan_metadata["is_todo_candidate"],
+            is_todo_candidate=False,
             event_time=now,
-            due_time=plan_metadata["due_time"],
+            due_time=None,
             created_by="user",
         )
         memory_repository.create(db, memory)
-        chunk_service.rebuild_chunks_for_memory(db, memory)
-        fact_extraction_service.rebuild_facts_for_memory(db, memory)
-        memory_relation_service.rebuild_for_memory(db, user_id, memory)
         timeline_repository.create(
             db,
             TimelineEvent(
@@ -314,73 +238,10 @@ class MemoryService:
         )
 
         review_service.enqueue_for_memory(db, memory)
-        self._sync_todo_for_memory(db, memory)
 
         db.commit()
-        dashboard_service.invalidate_insight_cache(user_id)
         db.refresh(memory)
-        facts = fact_repository.list_for_memory(db, user_id, memory.id)
-        return _to_memory_detail(memory, facts)
-
-    def _sync_todo_for_memory(self, db: Session, memory: MemoryItem) -> TodoItem | None:
-        existing = todo_repository.get_for_source_memory(db, memory.user_id, memory.id)
-        if not memory.is_todo_candidate:
-            self._archive_auto_todo_for_memory(db, memory)
-            return existing
-
-        title = memory.title or _summarize(memory.content_raw)
-        description = f"来源记录：{memory.content_summary or memory.content_raw}".strip()
-        if existing is None:
-            todo = TodoItem(
-                user_id=memory.user_id,
-                source_memory_id=memory.id,
-                title=title,
-                description=description,
-                status="pending",
-                priority="medium",
-                due_at=memory.due_time,
-                risk_level="medium" if memory.due_time is not None else "low",
-                ai_generated=True,
-                requires_approval=False,
-                meta_payload={"source": "memory_auto_parse"},
-            )
-            todo_repository.create(db, todo)
-            timeline_repository.create(
-                db,
-                TimelineEvent(
-                    user_id=memory.user_id,
-                    event_type="todo_created",
-                    ref_type="todo",
-                    ref_id=todo.id,
-                    title=f"从记录自动生成待办：{todo.title}",
-                    summary=todo.description or "这条记录包含提醒或待办线索。",
-                    event_time=utcnow(),
-                ),
-            )
-        else:
-            todo = existing
-            todo.title = title
-            todo.description = description
-            todo.due_at = memory.due_time
-            todo.risk_level = "medium" if memory.due_time is not None else todo.risk_level
-
-        reminder_service.sync_user_reminders(db, memory.user_id)
-        return todo
-
-    def _archive_auto_todo_for_memory(self, db: Session, memory: MemoryItem) -> int:
-        existing = todo_repository.get_for_source_memory(db, memory.user_id, memory.id)
-        if existing is None:
-            return 0
-
-        meta_payload = existing.meta_payload or {}
-        if not existing.ai_generated or meta_payload.get("source") != "memory_auto_parse":
-            return 0
-
-        existing.deleted_at = existing.deleted_at or utcnow()
-        for reminder in reminder_repository.list_for_todo(db, existing.id):
-            if reminder.status == "active":
-                reminder.status = "dismissed"
-        return 1
+        return _to_memory_detail(memory)
 
 
 memory_service = MemoryService()

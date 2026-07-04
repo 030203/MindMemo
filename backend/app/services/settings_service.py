@@ -16,9 +16,6 @@ class SettingsService:
 
         return SettingsResponse(
             timezone=user_settings.timezone,
-            llm_provider=user_settings.llm_provider,
-            llm_model=user_settings.llm_model,
-            web_search_enabled=user_settings.web_search_enabled,
             notify_channels=list(user_settings.notify_channels or []),
         )
 
@@ -32,6 +29,9 @@ class SettingsService:
 
         if payload.notify_channels is not None:
             user_settings.notify_channels = self._normalize_notify_channels(payload.notify_channels)
+
+        if payload.timezone is not None:
+            user_settings.timezone = payload.timezone.strip()
 
         db.commit()
         db.refresh(user_settings)

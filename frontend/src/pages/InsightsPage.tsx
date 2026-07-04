@@ -1,341 +1,208 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Brain, Briefcase, CircleDollarSign, HeartPulse, Lightbulb, ListChecks, MessageSquareText } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Brain, CalendarDays, Lightbulb, Loader2, RotateCw, Sparkles, TrendingUp } from "lucide-react";
 import { api } from "../api/client";
-import type { DashboardInsights, InsightSourceItem, MemoryInsightCard } from "../api/types";
-import { formatDateTime } from "../utils/presentation";
+import type { InsightItem } from "../api/types";
+import "../styles/insights.css";
 
-type InsightTab = "overview" | "expenses" | "reflection";
-type SourceFilter = "all" | "memory" | "todo";
-type InsightWindow = "default" | "7d" | "30d" | "90d" | "month" | "all";
-
-const insightTabs: Array<{ key: InsightTab; label: string; description: string }> = [
-  { key: "overview", label: "总览", description: "跨消费、情绪、学习、计划和项目的当前信号。" },
-  { key: "expenses", label: "消费", description: "从结构化消费事实里看金额、频率和异常。" },
-  { key: "reflection", label: "复盘", description: "把近期学习、情绪、项目和待办整理成可追溯线索。" },
+const typeOptions = [
+  { value: "all", label: "全部", icon: <Sparkles size={13} /> },
+  { value: "pattern", label: "学习模式", icon: <TrendingUp size={13} /> },
+  { value: "report", label: "周报摘要", icon: <CalendarDays size={13} /> },
+  { value: "learning", label: "知识洞察", icon: <Brain size={13} /> },
+  { value: "project", label: "项目分析", icon: <Lightbulb size={13} /> },
 ];
 
-const insightWindows: Array<{ key: InsightWindow; label: string }> = [
-  { key: "default", label: "智能默认" },
-  { key: "7d", label: "近 7 天" },
-  { key: "30d", label: "近 30 天" },
-  { key: "90d", label: "近 90 天" },
-  { key: "month", label: "本月" },
-  { key: "all", label: "全部" },
-];
+const typeIconMap: Record<string, ReactNode> = {
+  pattern: <TrendingUp size={15} />,
+  report: <CalendarDays size={15} />,
+  learning: <Brain size={15} />,
+  project: <Lightbulb size={15} />,
+};
 
-function normalizeTab(value: string | null): InsightTab {
-  if (value === "expenses" || value === "reflection") {
-    return value;
-  }
-  return "overview";
+function formatInsightIcon(type: string) {
+  return typeIconMap[type] ?? <Lightbulb size={15} />;
 }
 
-function normalizeSourceFilter(value: string | null): SourceFilter {
-  if (value === "memory" || value === "todo") {
-    return value;
-  }
-  return "all";
+function describeConfidence(score: number) {
+  if (score >= 0.85) return "高置信度";
+  if (score >= 0.7) return "较高置信度";
+  if (score >= 0.5) return "中等置信度";
+  return "仅供参考";
 }
 
-function normalizeInsightWindow(value: string | null): InsightWindow {
-  if (value === "7d" || value === "30d" || value === "90d" || value === "month" || value === "all") {
-    return value;
-  }
-  return "default";
+function confidenceColor(score: number) {
+  if (score >= 0.85) return "#4a8c5c";
+  if (score >= 0.7) return "#7a8a4a";
+  if (score >= 0.5) return "#a69580";
+  return "#bbb";
 }
 
-function sourceFilterLabel(value: SourceFilter) {
-  if (value === "memory") return "只看记忆";
-  if (value === "todo") return "只看待办";
-  return "全部来源";
-}
+export function InsightsPage() {
+  const queryClient = useQueryClient();
+  const [typeFilter, setTypeFilter] = useState("all");
 
-function filterSources(sources: InsightSourceItem[], sourceFilter: SourceFilter) {
-  if (sourceFilter === "all") {
-    return sources;
-  }
-  return sources.filter((source) => source.type === sourceFilter);
-}
-
-function updateSearchParams(
-  setSearchParams: ReturnType<typeof useSearchParams>[1],
-  next: { tab?: InsightTab; card?: string; source?: SourceFilter; window?: InsightWindow },
-) {
-  setSearchParams((current) => {
-    const params = new URLSearchParams(current);
-    if (next.tab !== undefined) {
-      if (next.tab === "overview") {
-        params.delete("tab");
-      } else {
-        params.set("tab", next.tab);
-      }
-      params.delete("card");
-    }
-    if (next.card !== undefined) {
-      if (next.card) {
-        params.set("card", next.card);
-      } else {
-        params.delete("card");
-      }
-    }
-    if (next.source !== undefined) {
-      if (next.source === "all") {
-        params.delete("source");
-      } else {
-        params.set("source", next.source);
-      }
-    }
-    if (next.window !== undefined) {
-      if (next.window === "default") {
-        params.delete("window");
-      } else {
-        params.set("window", next.window);
-      }
-      params.delete("card");
-    }
-    return params;
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["insights"],
+    queryFn: () => api.listInsights(30),
   });
-}
 
-function renderInsightIcon(kind: string) {
-  if (kind === "expense") return <CircleDollarSign size={18} />;
-  if (kind === "mood") return <HeartPulse size={18} />;
-  if (kind === "learning") return <Lightbulb size={18} />;
-  if (kind === "plan") return <ListChecks size={18} />;
-  if (kind === "project") return <Briefcase size={18} />;
-  return <Brain size={18} />;
-}
+  const generateMutation = useMutation({
+    mutationFn: api.generateInsight,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["insights"] });
+    },
+  });
 
-function getInsightQuery(tab: InsightTab, window: InsightWindow) {
-  if (tab === "expenses") {
-    return api.getExpenseInsights(window);
-  }
-  if (tab === "reflection") {
-    return api.getReflectionInsights(window);
-  }
-  return api.getInsightOverview(window);
-}
+  const insights: InsightItem[] = data ?? [];
 
-function InsightSourceList({ card, sourceFilter }: { card: MemoryInsightCard; sourceFilter: SourceFilter }) {
-  const sources = filterSources(card.sources, sourceFilter);
+  const filtered = useMemo(
+    () => (typeFilter === "all" ? insights : insights.filter((i) => i.insight_type === typeFilter)),
+    [insights, typeFilter],
+  );
 
-  if (sources.length === 0) {
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: insights.length };
+    for (const i of insights) {
+      counts[i.insight_type] = (counts[i.insight_type] ?? 0) + 1;
+    }
+    return counts;
+  }, [insights]);
+
+  if (isLoading) {
     return (
-      <div className="empty-state insight-empty-sources">
-        {card.sources.length === 0 ? "这张卡片暂时没有可回跳的来源。" : `当前筛选下没有${sourceFilterLabel(sourceFilter)}。`}
+      <div className="ip-loading">
+        <Loader2 className="spin" size={20} />
+        <span>正在加载 AI 洞察...</span>
       </div>
     );
   }
 
+  if (error) {
+    return <div className="ip-error">AI 洞察加载失败，请确认后端服务已启动。</div>;
+  }
+
   return (
-    <div className="insight-detail-sources">
-      {sources.map((source) => {
-        const to = source.type === "memory" ? `/memories/${source.id}` : "/todos";
-        return (
-          <Link className="insight-detail-source" key={`${card.kind}-${source.type}-${source.id}`} to={to}>
-            <div>
-              <span>{source.type === "memory" ? "记忆来源" : "待办来源"}</span>
-              <strong>{source.title}</strong>
+    <div className="ip-page">
+      {/* Hero section */}
+      <section className="ip-hero">
+        <span className="ip-hero-accent" />
+        <div className="ip-hero-content">
+          <div className="ip-hero-text">
+            <div className="ip-hero-label">
+              <Sparkles size={12} />
+              <span>Insight Center</span>
             </div>
-            <p>{source.snippet}</p>
-            <div className="inline-meta">
-              <span>{formatDateTime(source.event_time)}</span>
-              <ArrowRight size={14} />
+            <h1>AI 帮你从记忆里发现的规律</h1>
+            <p>
+              系统定期分析你的记忆库，发现学习模式、知识关联和潜在习惯。
+              每次写入新记忆后，后台会自动生成洞察。
+            </p>
+          </div>
+          <div className="ip-hero-stats">
+            <div className="ip-stat">
+              <span className="ip-stat-num">{insights.length}</span>
+              <span className="ip-stat-label">总洞察</span>
             </div>
-          </Link>
-        );
-      })}
-    </div>
-  );
-}
-
-function InsightCardDetail({ card, sourceFilter }: { card: MemoryInsightCard; sourceFilter: SourceFilter }) {
-  return (
-    <article className={`insight-detail-card insight-card-${card.tone}`}>
-      <div className="insight-detail-header">
-        <div className="insight-topline">
-          <span className="insight-icon">{renderInsightIcon(card.kind)}</span>
-          <span>{card.title}</span>
+            <div className="ip-stat">
+              <span className="ip-stat-num">{typeCounts.pattern ?? 0}</span>
+              <span className="ip-stat-label">学习模式</span>
+            </div>
+            <div className="ip-stat">
+              <span className="ip-stat-num">{typeCounts.learning ?? 0}</span>
+              <span className="ip-stat-label">知识洞察</span>
+            </div>
+            <div className="ip-stat">
+              <span className="ip-stat-num">{typeCounts.project ?? 0}</span>
+              <span className="ip-stat-label">项目分析</span>
+            </div>
+          </div>
         </div>
-        <Link className="button-ghost insight-question-link" to={{ pathname: "/chat", search: `?q=${encodeURIComponent(card.question)}` }}>
-          <MessageSquareText size={15} />
-          追问
-        </Link>
-      </div>
-
-      <div className="insight-detail-body">
-        <strong>{card.value}</strong>
-        <p>{card.detail}</p>
-      </div>
-
-      {card.items.length > 0 ? (
-        <div className="insight-items insight-detail-items">
-          {card.items.map((item) => (
-            <span key={item}>{item}</span>
-          ))}
-        </div>
-      ) : null}
-
-      <InsightSourceList card={card} sourceFilter={sourceFilter} />
-    </article>
-  );
-}
-
-export function InsightsPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = normalizeTab(searchParams.get("tab"));
-  const activeCardKind = searchParams.get("card") ?? "";
-  const sourceFilter = normalizeSourceFilter(searchParams.get("source"));
-  const activeWindow = normalizeInsightWindow(searchParams.get("window"));
-  const activeTabMeta = insightTabs.find((item) => item.key === activeTab) ?? insightTabs[0];
-
-  const { data, isLoading, error } = useQuery<DashboardInsights>({
-    queryKey: ["insights", activeTab, activeWindow],
-    queryFn: () => getInsightQuery(activeTab, activeWindow),
-  });
-  const {
-    data: focusedCard,
-    isLoading: focusedCardLoading,
-    error: focusedCardError,
-  } = useQuery<MemoryInsightCard>({
-    queryKey: ["insight-card", activeCardKind, activeWindow],
-    queryFn: () => api.getInsightCard(activeCardKind, activeWindow),
-    enabled: Boolean(activeCardKind),
-  });
-
-  const cards = data?.cards ?? [];
-  const fallbackFocusedCards = activeCardKind ? cards.filter((card) => card.kind === activeCardKind) : cards;
-  const visibleCards = activeCardKind && focusedCard ? [focusedCard] : fallbackFocusedCards;
-  const stats = useMemo(
-    () => ({
-      cards: visibleCards.length,
-      sources: visibleCards.reduce((total, card) => total + filterSources(card.sources, sourceFilter).length, 0),
-      questions: visibleCards.filter((card) => card.question.trim()).length,
-    }),
-    [sourceFilter, visibleCards],
-  );
-
-  return (
-    <div className="page-grid">
-      <section className="panel insight-hero-panel">
-        <div className="section-title">
-          <div>
-            <span className="eyebrow">Phase 12 Insight Agents</span>
-            <h3>把个人事实整理成可追溯洞察</h3>
-          </div>
-          <Link className="button-ghost" to="/chat">
-            <MessageSquareText size={15} />
-            问 AI
-          </Link>
-        </div>
-        <p className="panel-subtitle">
-          当前页面直接消费独立 Insight API。每张卡片都保留来源回链，方便从结论跳回原始记忆或待办证据。
-        </p>
-        <div className="insight-summary-grid">
-          <div className="trace-stat">
-            <span>洞察卡片</span>
-            <strong>{stats.cards}</strong>
-          </div>
-          <div className="trace-stat">
-            <span>来源证据</span>
-            <strong>{stats.sources}</strong>
-          </div>
-          <div className="trace-stat">
-            <span>可追问问题</span>
-            <strong>{stats.questions}</strong>
-          </div>
+        <div className="ip-hero-action">
+          <button
+            className="ip-generate-btn"
+            type="button"
+            disabled={generateMutation.isPending}
+            onClick={() => generateMutation.mutate()}
+          >
+            {generateMutation.isPending ? (
+              <>
+                <Loader2 className="spin" size={15} />
+                正在分析...
+              </>
+            ) : (
+              <>
+                <RotateCw size={15} />
+                立即生成新洞察
+              </>
+            )}
+          </button>
         </div>
       </section>
 
-      <section className="panel">
-        <div className="section-title insight-toolbar">
-          <div>
-            <h3>{activeTabMeta.label}洞察</h3>
-            <p className="panel-subtitle">{activeTabMeta.description}</p>
-          </div>
-          <div className="segmented-control" role="tablist" aria-label="洞察分类">
-            {insightTabs.map((item) => (
+      {/* Filter tabs */}
+      {insights.length > 0 && (
+        <div className="ip-filters">
+          {typeOptions.map((option) => {
+            const count = typeCounts[option.value] ?? 0;
+            return (
               <button
-                className={item.key === activeTab ? "active" : ""}
-                key={item.key}
+                key={option.value}
+                className={`ip-filter-chip${typeFilter === option.value ? " active" : ""}`}
                 type="button"
-                onClick={() => updateSearchParams(setSearchParams, { tab: item.key })}
+                onClick={() => setTypeFilter(option.value)}
               >
-                {item.label}
+                {option.icon}
+                {option.label}
+                <span className="ip-filter-count">{count}</span>
               </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Insight cards */}
+      <section className="ip-list">
+        {filtered.length === 0 ? (
+          <div className="ip-empty">
+            <Lightbulb size={28} />
+            <p>
+              {typeFilter !== "all"
+                ? `当前筛选下没有"${typeOptions.find((o) => o.value === typeFilter)?.label ?? typeFilter}"类型的洞察。`
+                : "还没有生成洞察。写几条记忆后，点击上方按钮让 AI 帮你发现规律。"}
+            </p>
+          </div>
+        ) : (
+          <div className="ip-card-grid">
+            {filtered.map((item) => (
+              <article className={`ip-card ip-card-${item.insight_type}`} key={item.id}>
+                <div className="ip-card-top">
+                  <span className={`ip-type-chip ip-type-${item.insight_type}`}>
+                    {formatInsightIcon(item.insight_type)}
+                    {typeOptions.find((o) => o.value === item.insight_type)?.label ?? item.insight_type}
+                  </span>
+                  <span className="ip-confidence" style={{ color: confidenceColor(item.confidence) }}>
+                    {describeConfidence(item.confidence)}
+                  </span>
+                </div>
+                <h3 className="ip-card-title">{item.title}</h3>
+                <p className="ip-card-body">{item.content}</p>
+                <div className="ip-card-footer">
+                  {item.created_at
+                    ? new Date(item.created_at).toLocaleDateString("zh-CN", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : ""}
+                </div>
+              </article>
             ))}
           </div>
-        </div>
-
-        {cards.length > 0 ? (
-          <div className="insight-filter-panel">
-            <div className="insight-filter-group">
-              <span>洞察卡片</span>
-              <div className="insight-chip-row" role="list" aria-label="单张洞察筛选">
-                <button className={`signal-filter-chip${!activeCardKind ? " active" : ""}`} type="button" onClick={() => updateSearchParams(setSearchParams, { card: "" })}>
-                  全部
-                </button>
-                {cards.map((card) => (
-                  <button
-                    className={`signal-filter-chip${activeCardKind === card.kind ? " active" : ""}`}
-                    key={card.kind}
-                    type="button"
-                    onClick={() => updateSearchParams(setSearchParams, { card: card.kind })}
-                  >
-                    {card.title}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="insight-filter-group">
-              <span>来源类型</span>
-              <div className="segmented-control" role="tablist" aria-label="来源类型筛选">
-                {(["all", "memory", "todo"] as SourceFilter[]).map((item) => (
-                  <button
-                    className={item === sourceFilter ? "active" : ""}
-                    key={item}
-                    type="button"
-                    onClick={() => updateSearchParams(setSearchParams, { source: item })}
-                  >
-                    {sourceFilterLabel(item)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="insight-filter-group">
-              <span>时间窗口</span>
-              <div className="segmented-control insight-window-control" role="tablist" aria-label="洞察时间窗口">
-                {insightWindows.map((item) => (
-                  <button
-                    className={item.key === activeWindow ? "active" : ""}
-                    key={item.key}
-                    type="button"
-                    onClick={() => updateSearchParams(setSearchParams, { window: item.key })}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        {isLoading || focusedCardLoading ? <div className="loading">正在读取洞察...</div> : null}
-        {error ? <div className="error">洞察加载失败，请确认后端服务已经启动。</div> : null}
-        {focusedCardError ? <div className="error">单张洞察加载失败，已保留列表结果作为兜底。</div> : null}
-        {!isLoading && !error && cards.length === 0 ? (
-          <div className="empty-state">暂时没有足够的结构化事实生成洞察。继续记录消费、学习、项目或复盘内容后再回来看看。</div>
-        ) : null}
-
-        <div className="insight-detail-grid">
-          {visibleCards.map((card) => (
-            <InsightCardDetail card={card} key={card.kind} sourceFilter={sourceFilter} />
-          ))}
-        </div>
+        )}
       </section>
     </div>
   );

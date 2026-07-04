@@ -2,10 +2,10 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import ForeignKey, String, Text, Uuid
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, SoftDeleteMixin, TimestampMixin
-from app.models.types import EMBEDDING_VARIANT, JSON_VARIANT
+from app.models.types import JSON_VARIANT
 
 
 class MemoryItem(Base, TimestampMixin, SoftDeleteMixin):
@@ -25,7 +25,8 @@ class MemoryItem(Base, TimestampMixin, SoftDeleteMixin):
     entities: Mapped[list] = mapped_column(JSON_VARIANT, default=list, nullable=False)
     time_info: Mapped[dict] = mapped_column(JSON_VARIANT, default=dict, nullable=False)
     importance_score: Mapped[float] = mapped_column(default=0.0, nullable=False)
-    confidence_score: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    # DB still has this column; kept for compatibility, no longer used in app logic
+    confidence_score: Mapped[float] = mapped_column("confidence_score", default=0.0, nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="active", nullable=False)
     is_todo_candidate: Mapped[bool] = mapped_column(default=False, nullable=False)
     event_time: Mapped[datetime | None] = mapped_column(nullable=True)
@@ -33,52 +34,7 @@ class MemoryItem(Base, TimestampMixin, SoftDeleteMixin):
     last_recalled_at: Mapped[datetime | None] = mapped_column(nullable=True)
     created_by: Mapped[str] = mapped_column(String(20), default="user", nullable=False)
 
-
-class MemoryChunk(Base, TimestampMixin):
-    __tablename__ = "memory_chunks"
-
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), index=True, nullable=False)
-    memory_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("memory_items.id"), index=True, nullable=False
+    # Phase 1: 目标关联
+    goal_links: Mapped[list["MemoryGoalLink"]] = relationship(
+        "MemoryGoalLink", back_populates="memory", cascade="all, delete-orphan"
     )
-    chunk_index: Mapped[int] = mapped_column(nullable=False)
-    chunk_text: Mapped[str] = mapped_column(Text, nullable=False)
-    chunk_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
-    embedding: Mapped[list[float] | None] = mapped_column(EMBEDDING_VARIANT, nullable=True)
-    token_count: Mapped[int | None] = mapped_column(nullable=True)
-    keywords: Mapped[list] = mapped_column(JSON_VARIANT, default=list, nullable=False)
-    meta_payload: Mapped[dict] = mapped_column("metadata", JSON_VARIANT, default=dict, nullable=False)
-
-
-class MemoryRelation(Base, TimestampMixin):
-    __tablename__ = "memory_relations"
-
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), index=True, nullable=False)
-    from_memory_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("memory_items.id"), nullable=False
-    )
-    to_memory_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("memory_items.id"), nullable=False
-    )
-    relation_type: Mapped[str] = mapped_column(String(32), nullable=False)
-    relation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-    score: Mapped[float] = mapped_column(default=0.0, nullable=False)
-    created_by: Mapped[str] = mapped_column(String(20), default="agent", nullable=False)
-
-
-class ExtractedFact(Base, TimestampMixin):
-    __tablename__ = "extracted_facts"
-
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), index=True, nullable=False)
-    memory_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("memory_items.id"), index=True, nullable=False
-    )
-    fact_type: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
-    title: Mapped[str] = mapped_column(String(255), nullable=False)
-    structured_payload: Mapped[dict] = mapped_column(JSON_VARIANT, default=dict, nullable=False)
-    confidence_score: Mapped[float] = mapped_column(default=0.0, nullable=False)
-    event_time: Mapped[datetime | None] = mapped_column(nullable=True)
-    source: Mapped[str] = mapped_column(String(32), default="rule_v1", nullable=False)

@@ -1,26 +1,30 @@
 import type {
+  AdminMeResponse,
   ApiResponse,
-  AgentRun,
   AuthResponseData,
-  DashboardInsights,
+  ChatMessageItem,
+  ChatSessionCreateRequest,
+  ChatSessionResponse,
   DashboardOverview,
-  MemoryInsightCard,
+  InsightGenerateResponse,
+  InsightItem,
+  MaintenanceReport,
   MemoryCreateRequest,
   MemoryDetail,
   MemoryItem,
   MemoryListQuery,
-  MemoryRelatedItem,
-  MemorySignalItem,
   MemoryUpdateRequest,
   NotificationProviderStatus,
   NotificationTestResponse,
-  QARequest,
-  QAResponseData,
-  RetrievalTraceResponse,
+  QAResponse,
   ReminderItem,
   ReviewItem,
+  SessionQARequest,
+  SessionQAResponse,
   SettingsData,
   SettingsUpdateRequest,
+  TextIngestRequest,
+  TextIngestResult,
   TimelineItem,
   TodoCreateRequest,
   TodoItem,
@@ -31,10 +35,6 @@ import type {
   UserProfile,
   UserProfileUpdateRequest,
   UserRegisterRequest,
-  WeatherRequest,
-  WeatherResponse,
-  WebSearchRequest,
-  WebSearchResponse,
 } from "./types";
 import {
   clearAuthSession,
@@ -177,16 +177,10 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   getDashboardOverview: () => request<DashboardOverview>("/dashboard/overview"),
-  getDashboardInsights: () => request<DashboardInsights>("/dashboard/insights"),
   getDashboardReminders: (limit?: number) => request<ReminderItem[]>(withQuery("/dashboard/reminders", limit ? { limit: String(limit) } : undefined)),
-  getInsightOverview: (window?: string) => request<DashboardInsights>(withQuery("/insights/overview", window ? { window } : undefined)),
-  getExpenseInsights: (window?: string) => request<DashboardInsights>(withQuery("/insights/expenses", window ? { window } : undefined)),
-  getReflectionInsights: (window?: string) => request<DashboardInsights>(withQuery("/insights/reflection", window ? { window } : undefined)),
-  getInsightCard: (kind: string, window?: string) => request<MemoryInsightCard>(withQuery(`/insights/${kind}`, window ? { window } : undefined)),
   listMemories: (query?: MemoryListQuery) =>
     request<MemoryItem[]>(withQuery("/memories", query as Record<string, string | undefined> | undefined)),
   getMemoryDetail: (memoryId: string) => request<MemoryDetail>(`/memories/${memoryId}`),
-  listRelatedMemories: (memoryId: string) => request<MemoryRelatedItem[]>(`/memories/${memoryId}/related`),
   createMemory: (payload: MemoryCreateRequest) =>
     request<MemoryDetail>("/memories", {
       method: "POST",
@@ -209,6 +203,16 @@ export const api = {
     }),
   ingestImage: (payload: FormData) =>
     request<MemoryDetail>("/ingest/image", {
+      method: "POST",
+      body: payload,
+    }),
+  ingestText: (payload: TextIngestRequest) =>
+    request<TextIngestResult>("/ingest/text", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  ingestCapture: (payload: FormData) =>
+    request<TextIngestResult>("/ingest/capture", {
       method: "POST",
       body: payload,
     }),
@@ -242,22 +246,8 @@ export const api = {
       method: "DELETE",
     }),
   listTimeline: () => request<TimelineItem[]>("/timeline"),
-  listMemorySignals: (factType?: string) =>
-    request<MemorySignalItem[]>(withQuery("/timeline/signals", factType ? { fact_type: factType } : undefined)),
-  askQuestion: (payload: QARequest) =>
-    request<QAResponseData>("/qa/ask", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }),
-  listRetrievalTraces: (limit = 20) => request<RetrievalTraceResponse[]>(`/qa/traces?limit=${limit}`),
-  listAgentRuns: (limit = 20) => request<AgentRun[]>(`/qa/agent-runs?limit=${limit}`),
-  webSearch: (payload: WebSearchRequest) =>
-    request<WebSearchResponse>("/tools/web-search", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }),
-  getWeather: (payload: WeatherRequest) =>
-    request<WeatherResponse>("/tools/weather", {
+  askQuestion: (payload: { question: string }) =>
+    request<QAResponse>("/qa/ask", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
@@ -288,5 +278,182 @@ export const api = {
     request<NotificationTestResponse>("/settings/notifications/test", {
       method: "POST",
       body: JSON.stringify({ channel }),
+    }),
+  listInsights: (days?: number) =>
+    request<InsightItem[]>(withQuery("/insights/", days ? { days: String(days) } : undefined)),
+  generateInsight: () =>
+    request<InsightGenerateResponse>("/insights/generate", {
+      method: "POST",
+    }),
+  runMaintenance: () =>
+    request<MaintenanceReport>("/admin/run-maintenance", {
+      method: "POST",
+    }),
+  getAdminMe: () => request<AdminMeResponse>("/admin/me"),
+
+  // ── Chat / Session ──────────────────────────────────────
+  listSessions: () => request<ChatSessionResponse[]>("/chat/sessions"),
+  createOrGetSession: (payload: ChatSessionCreateRequest) =>
+    request<ChatSessionResponse>("/chat/sessions", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  getSessionMessages: (sessionId: string) =>
+    request<ChatMessageItem[]>(`/chat/sessions/${sessionId}/messages`),
+  askInSession: (sessionId: string, payload: SessionQARequest) =>
+    request<SessionQAResponse>(`/chat/sessions/${sessionId}/ask`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  askInSessionStream: (
+    sessionId: string,
+    payload: SessionQARequest,
+    onChunk: (content: string) => void,
+    onDone: (messageId: string) => void,
+    onError: (error: string) => void,
+    signal?: AbortSignal,
+  ) => {
+    const accessToken = getStoredAccessToken();
+    const url = `${API_BASE_URL}/chat/sessions/${sessionId}/ask-stream`;
+
+    // 打字机渲染：把服务端推来的每个 chunk（可能是几个字的一小段）拆成
+    // 单个字符，用定时器逐字吐给 onChunk，形成"一字一字"的效果。
+    // 无论上游是 LLM 的 token 流还是编排层的整段，前端表现一致。
+    const TYPE_INTERVAL_MS = 16; // 每字间隔，约 60 字/秒
+    const charQueue: string[] = []; // 按码点入队，避免拆断 emoji / 代理对
+    let streamEnded = false; // 网络流是否已结束
+    let flushed = false; // onDone/onError 是否已回调，防重复
+    let pendingMessageId = "";
+    let pendingError: string | null = null;
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const stopTimer = () => {
+      if (timer !== null) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+
+    const finish = () => {
+      if (flushed) return;
+      flushed = true;
+      stopTimer();
+      if (pendingError !== null) onError(pendingError);
+      else onDone(pendingMessageId);
+    };
+
+    const ensureTimer = () => {
+      if (timer !== null) return;
+      timer = setInterval(() => {
+        if (signal?.aborted) {
+          charQueue.length = 0;
+          stopTimer();
+          return;
+        }
+        const ch = charQueue.shift();
+        if (ch !== undefined) {
+          onChunk(ch);
+          return;
+        }
+        // 队列排空：流已结束则收尾，否则暂停等新数据
+        if (streamEnded) finish();
+        else stopTimer();
+      }, TYPE_INTERVAL_MS);
+    };
+
+    const enqueue = (text: string) => {
+      if (!text) return;
+      // Array.from 按 Unicode 码点拆分，emoji / 组合字符不会被截断
+      for (const ch of Array.from(text)) charQueue.push(ch);
+      ensureTimer();
+    };
+
+    fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
+      body: JSON.stringify(payload),
+      signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          pendingError = `请求失败: ${response.status}`;
+          streamEnded = true;
+          finish();
+          return;
+        }
+        const reader = response.body?.getReader();
+        if (!reader) {
+          pendingError = "响应体不可读";
+          streamEnded = true;
+          finish();
+          return;
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith("data: ")) continue;
+            try {
+              const data = JSON.parse(trimmed.slice(6));
+              if (data.type === "chunk") {
+                enqueue(String(data.content ?? ""));
+              } else if (data.type === "done") {
+                pendingMessageId = data.message_id ?? "";
+              } else if (data.type === "error") {
+                pendingError = data.content;
+              }
+            } catch {
+              // skip parse errors
+            }
+          }
+        }
+
+        // 网络流结束：让定时器把剩余字符吐完再收尾；队列已空则直接收尾。
+        streamEnded = true;
+        if (charQueue.length === 0) finish();
+        else ensureTimer();
+      })
+      .catch((err) => {
+        streamEnded = true;
+        if (err.name !== "AbortError") {
+          pendingError = err.message ?? "网络错误";
+          finish();
+        } else {
+          // 用户中止：清空队列、停止吐字，不再回调
+          charQueue.length = 0;
+          stopTimer();
+        }
+      });
+  },
+  updateSession: (sessionId: string, payload: { title?: string | null; pinned?: boolean }) =>
+    request<ChatSessionResponse>(`/chat/sessions/${sessionId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  updateReminder: (reminderId: string, payload: { due_at?: string | null; status?: string }) =>
+    request<{ status: string }>(`/dashboard/reminders/${reminderId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  deleteReminder: (reminderId: string) =>
+    request<{ status: string }>(`/dashboard/reminders/${reminderId}`, {
+      method: "DELETE",
+    }),
+  deleteSession: (sessionId: string) =>
+    request<{ deleted: boolean }>(`/chat/sessions/${sessionId}`, {
+      method: "DELETE",
     }),
 };

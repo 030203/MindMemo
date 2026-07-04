@@ -16,11 +16,15 @@ class TodoRepository:
         status: str | None = None,
         priority: str | None = None,
         sort: str | None = "priority",
+        exclude_reminders: bool = False,
     ) -> list[TodoItem]:
         stmt = (
             select(TodoItem)
             .where(TodoItem.user_id == user_id, TodoItem.deleted_at.is_(None))
         )
+
+        if exclude_reminders:
+            stmt = stmt.where(TodoItem.remind_at.is_(None))
 
         normalized_status = (status or "").strip().lower()
         if normalized_status and normalized_status != "all":

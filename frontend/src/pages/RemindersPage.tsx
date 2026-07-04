@@ -1,158 +1,276 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { BellRing, CalendarClock, CheckSquare, Clock3, ListFilter } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  AlertCircle,
+  Bell,
+  CalendarClock,
+  CheckCircle2,
+  Clock,
+  Forward,
+  Globe,
+  MoreHorizontal,
+  Trash2,
+} from "lucide-react";
 import { api } from "../api/client";
 import type { ReminderItem } from "../api/types";
 import { formatDateTimeLong } from "../utils/presentation";
+import "../styles/reminders.css";
 
-type ReminderFilter = "all" | "high" | "medium" | "low";
+type TabKey = "upcoming" | "overdue" | "all";
 
-const filterOptions: Array<{ key: ReminderFilter; label: string }> = [
-  { key: "all", label: "全部" },
-  { key: "high", label: "高优先" },
-  { key: "medium", label: "近期" },
-  { key: "low", label: "稍后" },
+const tabs: Array<{ key: TabKey; label: string; icon: typeof Clock }> = [
+  { key: "upcoming", label: "即将到来", icon: Clock },
+  { key: "overdue",  label: "已逾期",     icon: AlertCircle },
+  { key: "all",      label: "全部",       icon: Bell },
 ];
 
-function formatReminderType(type: string) {
-  const map: Record<string, string> = {
-    overdue: "已过期",
-    due_soon: "即将到点",
-    urgent: "紧急",
-    important: "重要",
-    blocked: "卡住了",
-  };
-  return map[type] ?? type;
+function isOverdue(r: ReminderItem): boolean {
+  if (!r.due_at) return r.type === "overdue";
+  return new Date(r.due_at).getTime() < Date.now();
 }
 
-function formatReminderLevel(level: string) {
-  if (level === "high") return "需要现在看到";
-  if (level === "medium") return "今天留意";
-  return "有空再看";
+function compareOverdue(a: ReminderItem, b: ReminderItem) {
+  if (!a.due_at && !b.due_at) return a.title.localeCompare(b.title);
+  if (!a.due_at) return 1;
+  if (!b.due_at) return -1;
+  return new Date(b.due_at).getTime() - new Date(a.due_at).getTime();
 }
 
-function compareReminderTime(a: ReminderItem, b: ReminderItem) {
+function compareUpcoming(a: ReminderItem, b: ReminderItem) {
   if (!a.due_at && !b.due_at) return a.title.localeCompare(b.title);
   if (!a.due_at) return 1;
   if (!b.due_at) return -1;
   return new Date(a.due_at).getTime() - new Date(b.due_at).getTime();
 }
 
+function timeUntil(dueAt: string | null): string {
+  if (!dueAt) return "";
+  const diff = new Date(dueAt).getTime() - Date.now();
+  const absDiff = Math.abs(diff);
+  const mins = Math.round(absDiff / 60000);
+  if (mins < 60) return diff > 0 ? `${mins}分钟后` : `${mins}分钟前`;
+  const hours = Math.round(absDiff / 3600000);
+  if (hours < 24) return diff > 0 ? `${hours}小时后` : `${hours}小时前`;
+  const days = Math.round(absDiff / 86400000);
+  return diff > 0 ? `${days}天后` : `${days}天前`;
+}
+
+// Pick an icon based on reminder type/title
+function reminderIcon(item: ReminderItem, overdue: boolean) {
+  if (overdue) return <AlertCircle size={20} />;
+  const t = item.title.toLowerCase();
+  if (t.includes("世界杯") || t.includes("world")) return <Globe size={20} />;
+  if (t.includes("提醒") || t.includes("铃")) return <Bell size={20} />;
+  if (item.due_at) return <Clock size={20} />;
+  return <Bell size={20} />;
+}
+
 export function RemindersPage() {
-  const [filter, setFilter] = useState<ReminderFilter>("all");
+  const queryClient = useQueryClient();
+  const [tab, setTab] = useState<TabKey>("upcoming");
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; item: ReminderItem } | null>(null);
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["dashboard-reminders", "center"],
-    queryFn: () => api.getDashboardReminders(50),
+    queryFn:  () => api.getDashboardReminders(50),
   });
 
   const reminders = data ?? [];
-  const visibleReminders = useMemo(
-    () =>
-      reminders
-        .filter((item) => filter === "all" || item.level === filter)
-        .sort(compareReminderTime),
-    [filter, reminders],
-  );
 
-  const dueSoonCount = reminders.filter((item) => item.type === "due_soon" || item.type === "overdue").length;
-  const highCount = reminders.filter((item) => item.level === "high").length;
-  const timedCount = reminders.filter((item) => item.due_at).length;
+  const overdueItems  = useMemo(() => reminders.filter(isOverdue).sort(compareOverdue), [reminders]);
+  const upcomingItems = useMemo(() => reminders.filter((r) => !isOverdue(r)).sort(compareUpcoming), [reminders]);
 
-  if (isLoading) {
-    return <div className="loading">正在整理需要提醒你的事情...</div>;
+  const visible = useMemo(() => {
+    if (tab === "overdue")  return overdueItems;
+    if (tab === "upcoming") return upcomingItems;
+    return [...reminders].sort(compareOverdue);
+  }, [tab, overdueItems, upcomingItems, reminders]);
+
+  const counts = { upcoming: upcomingItems.length, overdue: overdueItems.length, all: reminders.length };
+
+  const invalidateReminders = () => {
+    queryClient.invalidateQueries({ queryKey: ["dashboard-reminders"] });
+    queryClient.refetchQueries({ queryKey: ["dashboard-reminders"] });
+  };
+
+  const snoozeMutation = useMutation({
+    mutationFn: ({ id, dueAt }: { id: string; dueAt: string }) =>
+      api.updateReminder(id, { due_at: dueAt }),
+    onSuccess: () => { invalidateReminders(); setCtxMenu(null); },
+    onError: (err) => { console.error("snoozeReminder failed:", err); setCtxMenu(null); },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.updateReminder(id, { status: "dismissed" }),
+    onSuccess: () => { invalidateReminders(); setCtxMenu(null); },
+    onError: (err) => { console.error("dismissReminder failed:", err); setCtxMenu(null); },
+  });
+
+  function handleCardContext(e: React.MouseEvent, item: ReminderItem) {
+    e.preventDefault();
+    setCtxMenu({ x: e.clientX, y: e.clientY, item });
   }
 
-  if (error) {
-    return <div className="error">提醒列表加载失败，请确认后端服务已经启动。</div>;
+  function snooze(hours: number) {
+    if (!ctxMenu) return;
+    const newDue = new Date(Date.now() + hours * 3600000).toISOString();
+    snoozeMutation.mutate({ id: ctxMenu.item.id, dueAt: newDue });
+  }
+
+  function handleDismiss(id: string) {
+    deleteMutation.mutate(id);
   }
 
   return (
-    <div className="page-grid reminders-page">
-      <section className="reminder-overview">
-        <div className="reminder-overview-main">
-          <span className="eyebrow">Reminder Center</span>
-          <h3>真正需要提醒你的事件</h3>
-          <p>这里不是所有待办，而是系统判断应该主动浮出来的事项：到点、临近、逾期、紧急、重要或卡住的任务。</p>
-        </div>
-        <div className="reminder-stat-strip">
-          <div>
-            <BellRing size={18} />
-            <strong>{reminders.length}</strong>
-            <span>当前提醒</span>
-          </div>
-          <div>
-            <Clock3 size={18} />
-            <strong>{dueSoonCount}</strong>
-            <span>临近/逾期</span>
-          </div>
-          <div>
-            <CalendarClock size={18} />
-            <strong>{timedCount}</strong>
-            <span>有明确时间</span>
-          </div>
-          <div>
-            <ListFilter size={18} />
-            <strong>{highCount}</strong>
-            <span>高优先</span>
-          </div>
-        </div>
-      </section>
-
-      <section className="panel reminder-toolbar">
+    <div className="rm-page">
+      <div className="rm-header">
+        <Bell size={22} className="rm-header-icon" />
         <div>
-          <h3>提醒筛选</h3>
-          <p className="panel-subtitle">待办可以很多，但提醒只放需要主动打断你的事情。</p>
+          <h1 className="rm-title">{"提醒"}</h1>
+          <p className="rm-subtitle">
+            {"到点、临近、逾期、紧急或重要的待办，系统会自动提到这里。"}
+          </p>
         </div>
-        <div className="segmented-control" aria-label="提醒筛选">
-          {filterOptions.map((option) => (
-            <button
-              className={filter === option.key ? "active" : ""}
-              key={option.key}
-              type="button"
-              onClick={() => setFilter(option.key)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </section>
+      </div>
 
-      <section className="reminder-list-panel">
-        {visibleReminders.length === 0 ? (
-          <div className="empty-state reminder-empty">
-            当前没有符合条件的提醒。给待办设置截止时间，或在随手记里写“提醒我”，系统会把该出现的事件放到这里。
-          </div>
-        ) : (
-          <div className="reminder-page-list">
-            {visibleReminders.map((item) => (
-              <article className={`reminder-event-card reminder-event-${item.level}`} key={`${item.todo_id}-${item.type}`}>
-                <div className="reminder-event-icon">
-                  <BellRing size={18} />
-                </div>
-                <div className="reminder-event-body">
-                  <div className="reminder-event-topline">
-                    <span>{formatReminderType(item.type)}</span>
-                    <span>{formatReminderLevel(item.level)}</span>
+      {/* Tabs */}
+      <div className="rm-tabs">
+        {tabs.map((t) => {
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              className={`rm-tab${tab === t.key ? " active" : ""}`}
+              onClick={() => setTab(t.key)}
+            >
+              <Icon size={15} />
+              <span>{t.label}</span>
+              <span className="rm-tab-count">{counts[t.key]}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Content */}
+      {isLoading ? (
+        <div className="rm-loading">
+          {[1, 2, 3].map((i) => <div key={i} className="rm-skeleton" />)}
+        </div>
+      ) : error ? (
+        <div className="rm-error">{"提醒列表加载失败，请确认后端服务已启动。"}</div>
+      ) : visible.length === 0 ? (
+        <div className="rm-empty">
+          <CheckCircle2 size={36} />
+          <p>
+            {tab === "overdue"
+              ? "没有逾期的提醒，做得不错！"
+              : tab === "upcoming"
+                ? "暂时没有即将到来的提醒。"
+                : "当前没有提醒。给待办设置截止时间，系统会自动归集。"}
+          </p>
+        </div>
+      ) : (
+        <div className="rm-list">
+          {visible.map((item) => {
+            const overdue = isOverdue(item);
+            const rel = timeUntil(item.due_at);
+            return (
+              <article
+                key={`${item.todo_id}-${item.type}`}
+                className={`rm-card${overdue ? " rm-card-overdue" : ""}`}
+                onContextMenu={(e) => handleCardContext(e, item)}
+              >
+                {/* Left: icon + type badge */}
+                <div className="rm-card-left">
+                  <div className={`rm-card-icon-wrap${overdue ? " overdue" : ""}`}>
+                    {reminderIcon(item, overdue)}
                   </div>
-                  <h3>{item.title}</h3>
-                  <p>{item.message}</p>
-                  <div className="reminder-event-meta">
-                    <span>
-                      <CalendarClock size={15} />
+                  <span className={`rm-card-badge${overdue ? " overdue" : ""}`}>
+                    {overdue ? "已逾期" : item.type === "due_soon" ? "即将到点" : "提醒"}
+                  </span>
+                </div>
+
+                {/* Center: content */}
+                <div className="rm-card-body">
+                  <h3 className="rm-card-title">{item.title}</h3>
+                  {item.message && (
+                    <p className="rm-card-message">{item.message}</p>
+                  )}
+                  {item.due_at && (
+                    <span className="rm-card-date">
+                      <CalendarClock size={13} />
                       {formatDateTimeLong(item.due_at)}
                     </span>
-                    <Link to="/todos">
-                      <CheckSquare size={15} />
-                      查看关联待办
-                    </Link>
-                  </div>
+                  )}
+                </div>
+
+                {/* Right: time + action */}
+                <div className="rm-card-right">
+                  {rel && <span className="rm-card-rel">{rel}</span>}
+                  <button
+                    className={`rm-card-action${overdue ? " urgent" : ""}`}
+                    type="button"
+                    onClick={() => handleDismiss(item.id)}
+                  >
+                    {"处理提醒"}
+                  </button>
+                  <button
+                    className="rm-card-more"
+                    type="button"
+                    onClick={(e) => handleCardContext(e, item)}
+                  >
+                    <MoreHorizontal size={16} />
+                  </button>
                 </div>
               </article>
-            ))}
-          </div>
-        )}
-      </section>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Footer */}
+      {visible.length > 0 && (
+        <div className="rm-footer">
+          <svg viewBox="0 0 48 48" fill="none" width="36" height="36">
+            <path d="M24 6 C30 6 35 12 35 20 C35 26 30 30 28 34 H20 C18 30 13 26 13 20 C13 12 18 6 24 6Z" fill="#8cb89c" opacity="0.3"/>
+            <path d="M20 36h8M21 39h6" stroke="#6b9e7a" strokeWidth="1.5" strokeLinecap="round" opacity="0.4"/>
+            <path d="M16 14 C14 10 18 6 22 8" stroke="#6b9e7a" strokeWidth="1" opacity="0.3"/>
+            <path d="M32 14 C34 10 30 6 26 8" stroke="#6b9e7a" strokeWidth="1" opacity="0.3"/>
+            <circle cx="14" cy="8" r="2" fill="#a8d5b8" opacity="0.25"/>
+            <circle cx="34" cy="8" r="2" fill="#a8d5b8" opacity="0.25"/>
+          </svg>
+          <span>{"及时处理逾期提醒，让重要的事情不再被遗漏 ~"}</span>
+        </div>
+      )}
+
+      {ctxMenu && (() => {
+        const item = ctxMenu.item;
+        return (
+          <>
+            <div className="rm-ctx-overlay" onClick={() => setCtxMenu(null)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu(null); }} />
+            <div className="rm-ctx-menu" style={{ left: ctxMenu.x, top: ctxMenu.y }}>
+              <button className="rm-ctx-item" onClick={() => snooze(1)}>
+                <Forward size={14} />
+                <span>{"推迟 1 小时"}</span>
+              </button>
+              <button className="rm-ctx-item" onClick={() => snooze(24)}>
+                <Clock size={14} />
+                <span>{"推迟到明天"}</span>
+              </button>
+              <button className="rm-ctx-item" onClick={() => snooze(168)}>
+                <CalendarClock size={14} />
+                <span>{"推迟到下周"}</span>
+              </button>
+              <div className="rm-ctx-divider" />
+              <button className="rm-ctx-item danger" onClick={() => deleteMutation.mutate(item.id)}>
+                <Trash2 size={14} />
+                <span>{"删除提醒"}</span>
+              </button>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }

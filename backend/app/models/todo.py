@@ -26,6 +26,7 @@ class TodoItem(Base, TimestampMixin, SoftDeleteMixin):
     started_at: Mapped[datetime | None] = mapped_column(nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
     risk_level: Mapped[str] = mapped_column(String(16), default="none", nullable=False)
-    ai_generated: Mapped[bool] = mapped_column(default=False, nullable=False)
-    requires_approval: Mapped[bool] = mapped_column(default=False, nullable=False)
+    # DB still has these columns; kept for compatibility, no longer used in app logic
+    ai_generated: Mapped[bool] = mapped_column("ai_generated", default=False, nullable=False)
+    requires_approval: Mapped[bool] = mapped_column("requires_approval", default=False, nullable=False)
     meta_payload: Mapped[dict] = mapped_column("metadata", JSON_VARIANT, default=dict, nullable=False)

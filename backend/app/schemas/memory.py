@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class MemoryCreateRequest(BaseModel):
@@ -8,7 +8,6 @@ class MemoryCreateRequest(BaseModel):
     content: str
     category: str = "memo"
     source_type: str = "memo"
-    run_ai_parse: bool = True
     source_url: str | None = None
     file_name: str | None = None
     source_mime_type: str | None = None
@@ -26,6 +25,26 @@ class UrlIngestRequest(BaseModel):
     category: str = "learning"
 
 
+class TextIngestRequest(BaseModel):
+    content: str
+    title: str | None = None
+    record_type: str = "memo"              # "memo" | "todo" | "reminder"
+    due_at: datetime | None = None
+    remind_at: datetime | None = None
+
+    @model_validator(mode="after")
+    def validate_reminder_has_time(self):
+        if self.record_type == "reminder" and self.remind_at is None:
+            raise ValueError("reminder 类型必须提供 remind_at")
+        return self
+
+
+class TextIngestResult(BaseModel):
+    memory_id: str
+    todo_id: str | None = None
+    record_type: str
+
+
 class MemoryListItem(BaseModel):
     id: str
     title: str
@@ -41,29 +60,7 @@ class MemoryListItem(BaseModel):
     status: str
 
 
-class ExtractedFactResponse(BaseModel):
-    id: str
-    fact_type: str
-    title: str
-    structured_payload: dict = Field(default_factory=dict)
-    confidence_score: float
-    event_time: datetime | None = None
-    source: str
-
-
-class MemoryRelatedItem(BaseModel):
-    id: str
-    title: str
-    content_summary: str
-    category: str
-    relation_type: str
-    relation_reason: str
-    score: float
-    event_time: datetime | None = None
-
-
 class MemoryDetail(MemoryListItem):
     content_raw: str
     keywords: list[str] = Field(default_factory=list)
     entities: list[str] = Field(default_factory=list)
-    extracted_facts: list[ExtractedFactResponse] = Field(default_factory=list)
