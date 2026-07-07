@@ -1,0 +1,22 @@
+{
+  "type": "tool_call",
+  "name": "web_search",
+  "arguments": {
+    "query": "Python 最新版本 2025",
+    "max_results": 5
+  },
+  "_assistant_msg": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "call_00_CtHG9LGKeLBRdFYr6kc38709",
+        "type": "function",
+        "function": {
+          "name": "web_search",
+          "arguments": "{\"query\": \"Python 最新版本 2025\", \"max_results\": 5}"
+        }
+      }
+    ]
+  }
+}
