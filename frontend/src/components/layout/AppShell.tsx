@@ -8,10 +8,13 @@ import {
   LayoutDashboard,
   MessageSquare,
   Search,
+  Moon,
   Settings,
   Sparkles,
+  Sun,
 } from "lucide-react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useTheme } from "../../utils/useTheme";
 import { useState } from "react";
 import { useAuth } from "../../auth/AuthProvider";
 
@@ -26,6 +29,7 @@ const navItems = [
 export function AppShell() {
   const auth = useAuth();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
 
   const displayName = auth.user?.display_name ?? "我";
@@ -73,6 +77,16 @@ export function AppShell() {
             <Sparkles size={18} />
             <span>AI 对话</span>
           </NavLink>
+
+          <button
+            type="button"
+            className="studio-nav-item studio-theme-toggle"
+            onClick={toggleTheme}
+            title={theme === "dark" ? "\u5207\u6362\u4eae\u8272\u6a21\u5f0f" : "\u5207\u6362\u6697\u8272\u6a21\u5f0f"}
+          >
+            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            <span>{theme === "dark" ? "\u4eae\u8272\u6a21\u5f0f" : "\u6697\u8272\u6a21\u5f0f"}</span>
+          </button>
 
           <span className="studio-nav-divider" />
 

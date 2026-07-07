@@ -40,7 +40,7 @@ class TextIngestRequest(BaseModel):
 
 
 class TextIngestResult(BaseModel):
-    memory_id: str
+    memory_id: str | None = None
     todo_id: str | None = None
     record_type: str
 

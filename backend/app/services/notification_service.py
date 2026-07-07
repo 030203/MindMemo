@@ -160,8 +160,15 @@ class ReminderNotificationService:
         if not configured_providers:
             return 0
 
+        # Only push time-critical reminder types (due_soon = on-time, overdue = late)
+        pushable_types = {"due_soon", "overdue"}
+
         sent_count = 0
         for reminder in reminder_repository.list_pending_delivery(db, limit=limit):
+            if reminder.reminder_type not in pushable_types:
+                # Mark non-pushable as sent to skip them on future ticks
+                reminder_repository.mark_sent(db, reminder, utcnow())
+                continue
             message = self._build_message(reminder)
             delivered = False
             for provider in configured_providers:
@@ -178,13 +185,21 @@ class ReminderNotificationService:
         return sent_count
 
     def _build_message(self, reminder: ReminderEvent) -> NotificationMessage:
+        # Use a cleaner Chinese title
+        if reminder.reminder_type == "due_soon":
+            title = f"⏰ {reminder.title}"
+        elif reminder.reminder_type == "overdue":
+            title = f"⚠️ {reminder.title}"
+        else:
+            title = f"MindMemo: {reminder.title}"
+
         body = reminder.message
         if reminder.due_at is not None:
-            body = f"{body}\n\nDue at: {reminder.due_at.isoformat()}"
-        return NotificationMessage(
-            title=f"MindMemo reminder: {reminder.title}",
-            body=body,
-        )
+            from app.services.reminder_service import ensure_local
+            local_due = ensure_local(reminder.due_at)
+            if local_due:
+                body = f"{body}\n\n时间：{local_due.strftime('%Y年%m月%d日 %H:%M')}"
+        return NotificationMessage(title=title, body=body)
 
     def _get_provider(self, channel: str) -> NotificationProvider | None:
         for provider in self._providers:

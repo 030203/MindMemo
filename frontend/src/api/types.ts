@@ -98,7 +98,7 @@ export interface TextIngestRequest {
 }
 
 export interface TextIngestResult {
-  memory_id: string;
+  memory_id: string | null;
   todo_id: string | null;
   record_type: string;
 }

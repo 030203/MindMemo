@@ -145,12 +145,17 @@ class TodoService:
         db: Session,
         *,
         user_id: uuid.UUID,
-        source_memory_id: uuid.UUID,
+        source_memory_id: uuid.UUID | None = None,
         title: str,
+        description: str | None = None,
         due_at: datetime | None = None,
         remind_at: datetime | None = None,
     ) -> TodoItem:
-        """从文本录入直接创建 todo/reminder，跳过 LLM 分类步骤。"""
+        """从文本录入直接创建 todo/reminder，跳过 LLM 分类步骤。
+
+        当 record_type 为 todo/reminder 时不再创建 memory，source_memory_id
+        传 None；description 用于保留完整正文（含附件文本），避免内容丢失。
+        """
         # reminder 类型：due_at 和 remind_at 保持一致，让提醒系统能识别
         effective_due_at = remind_at if remind_at is not None else due_at
         todo = TodoItem(
@@ -158,6 +163,7 @@ class TodoService:
             user_id=user_id,
             source_memory_id=source_memory_id,
             title=title[:255],
+            description=description,
             status="pending",
             priority="medium",
             due_at=effective_due_at,

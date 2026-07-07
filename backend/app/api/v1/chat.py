@@ -189,19 +189,6 @@ async def ask_in_session_stream(
             while True:
                 kind, data = await queue.get()
                 if kind == "chunk":
-                    global _sse_chunk_logged
-                    if not _sse_chunk_logged:
-                        _sse_chunk_logged = True
-                        _agent_dbg(
-                            "chat.py:ask_in_session_stream",
-                            "first_sse_chunk",
-                            {
-                                "content_sample": data[:80],
-                                "replacement_count": data.count("�"),
-                                "content_len": len(data),
-                            },
-                            "C",
-                        )
                     full_answer_chunks.append(data)
                     yield f"data: {json.dumps({'type': 'chunk', 'content': data}, ensure_ascii=False)}\n\n"
                 elif kind == "done":

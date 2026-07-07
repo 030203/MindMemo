@@ -17,6 +17,7 @@ export function QuickCaptureCard() {
     mutationFn: api.ingestText,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard-overview"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-reminders"] });
       queryClient.invalidateQueries({ queryKey: ["memories"] });
       queryClient.invalidateQueries({ queryKey: ["todos"] });
       queryClient.invalidateQueries({ queryKey: ["timeline"] });

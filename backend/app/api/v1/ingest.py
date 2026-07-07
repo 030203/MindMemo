@@ -150,23 +150,28 @@ def ingest_text(
 ) -> ApiResponse[TextIngestResult]:
     title = (payload.title or "").strip() or payload.content[:60]
 
-    memory = memory_service.create_ingested_memory(
-        db,
-        user_id,
-        title=title,
-        content=payload.content,
-        category="memo",
-        source_type="text",
-        time_info={},
-    )
+    # 仅“记录”类型写入 memories；待办/提醒不再落库到记录，避免串档。
+    memory_id: str | None = None
+    if payload.record_type == "memo":
+        memory = memory_service.create_ingested_memory(
+            db,
+            user_id,
+            title=title,
+            content=payload.content,
+            category="memo",
+            source_type="text",
+            time_info={},
+        )
+        memory_id = str(memory.id)
 
     todo_id: str | None = None
     if payload.record_type in ("todo", "reminder"):
         todo = todo_service.create_from_ingest(
             db,
             user_id=user_id,
-            source_memory_id=memory.id,
+            source_memory_id=None,
             title=title,
+            description=payload.content,
             due_at=payload.due_at,
             remind_at=payload.remind_at if payload.record_type == "reminder" else None,
         )
@@ -174,7 +179,7 @@ def ingest_text(
 
     background_tasks.add_task(_maybe_trigger_insight, db, user_id)
     return ApiResponse(data=TextIngestResult(
-        memory_id=str(memory.id),
+        memory_id=memory_id,
         todo_id=todo_id,
         record_type=payload.record_type,
     ))
@@ -351,28 +356,38 @@ async def ingest_capture(
     # Determine source_type based on primary attachment
     source_type = time_info.get("attachment_kind", "text") if time_info else "text"
 
-    try:
-        memory = memory_service.create_ingested_memory(
-            db,
-            user_id,
-            title=resolved_title,
-            content=full_content,
-            category="memo",
-            source_type=source_type,
-            time_info=time_info,
-        )
-    except Exception:
+    # 仅“记录”类型写入 memories；待办/提醒不再落库到记录，避免串档。
+    memory_id: str | None = None
+    if record_type == "memo":
+        try:
+            memory = memory_service.create_ingested_memory(
+                db,
+                user_id,
+                title=resolved_title,
+                content=full_content,
+                category="memo",
+                source_type=source_type,
+                time_info=time_info,
+            )
+            memory_id = str(memory.id)
+        except Exception:
+            for p in saved_paths:
+                p.unlink(missing_ok=True)
+            raise
+    else:
+        # 待办/提醒不创建 memory，已上传的附件文件无 memory 引用，清理避免孤儿；
+        # 附件正文已合并进 full_content，会随 description 保留在 todo 里。
         for p in saved_paths:
             p.unlink(missing_ok=True)
-        raise
 
     todo_id: str | None = None
     if record_type in ("todo", "reminder"):
         todo = todo_service.create_from_ingest(
             db,
             user_id=user_id,
-            source_memory_id=memory.id,
+            source_memory_id=None,
             title=resolved_title,
+            description=full_content,
             due_at=parsed_due_at,
             remind_at=parsed_remind_at if record_type == "reminder" else None,
         )
@@ -380,7 +395,7 @@ async def ingest_capture(
 
     background_tasks.add_task(_maybe_trigger_insight, db, user_id)
     return ApiResponse(data=TextIngestResult(
-        memory_id=str(memory.id),
+        memory_id=memory_id,
         todo_id=todo_id,
         record_type=record_type,
     ))

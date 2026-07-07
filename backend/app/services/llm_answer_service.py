@@ -4,34 +4,12 @@ import itertools
 import json
 import logging
 import threading
-import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Generator
 
 from app.core.config import settings
-
-_DBG_LOG = Path(__file__).resolve().parents[3] / "debug-c9d69d.log"
-_dbg_content_logged = False
-
-
-def _agent_dbg(location: str, message: str, data: dict, hypothesis_id: str) -> None:
-    # #region agent log
-    try:
-        with _DBG_LOG.open("a", encoding="utf-8") as f:
-            f.write(json.dumps({
-                "sessionId": "c9d69d",
-                "location": location,
-                "message": message,
-                "data": data,
-                "hypothesisId": hypothesis_id,
-                "timestamp": int(time.time() * 1000),
-            }, ensure_ascii=False) + "\n")
-    except Exception:
-        pass
-    # #endregion
 
 logger = logging.getLogger(__name__)
 
@@ -535,19 +513,6 @@ class LLMAnswerService:
                         delta = choices[0].get("delta") or {}
                         content = delta.get("content") or ""
                         if content:
-                            global _dbg_content_logged
-                            if not _dbg_content_logged:
-                                _dbg_content_logged = True
-                                _agent_dbg(
-                                    "llm_answer_service.py:chat_stream",
-                                    "first_llm_content_chunk",
-                                    {
-                                        "content_sample": content[:80],
-                                        "replacement_count": content.count("\ufffd"),
-                                        "content_len": len(content),
-                                    },
-                                    "A",
-                                )
                             full_answer_chunks.append(content)
                             yield content
         except Exception as exc:

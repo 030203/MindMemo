@@ -6,38 +6,39 @@ MindMemo 是一个面向个人知识管理的 AI 增强型笔记系统。你可�
 
 ---
 
-## ✨ 核心功能
+## ✨ 界面预览
 
-### 📝 快速记录
-- 随手记、待办、提醒三种模式一键切换
-- 支持文字、文件附件（PDF/DOCX/TXT）、网页导入
-- 自动提取标签、关键词、实体，智能分类
+### 工作台 — 亮色模式
+![Dashboard](screenshots/dashboard.png)
 
-### 📋 我的记录
-- 水彩风插画卡片，每条记录随机匹配自然主题插画
-- 按分类筛选（随手记 / 学习记录 / 项目进展 / 灵感）
-- 关键词搜索 + 全文检索
+### 我的记录 — 水彩插画卡片
+![Memories](screenshots/memories.png)
 
-### ✅ 待办管理
-- 优先级排序、状态流转（待办 → 进行中 → 完成）
-- 截止日期提醒，逾期自动标红
-- 从记录一键转为待办
+### 待办管理
+![Todos](screenshots/todos.png)
 
-### 🔔 智能提醒
-- 系统自动从待办中识别即将到期、逾期、紧急事项
-- 支持推迟提醒（1小时 / 明天 / 下周）
-- 外部通知：PushDeer / ServerChan / 企业微信
+### 智能提醒
+![Reminders](screenshots/reminders.png)
 
-### 🤖 AI 对话
-- 三栏布局：会话列表 / 对话区 / 上下文面板
-- 基于你的所有记录进行 RAG 问答
-- SSE 流式输出，实时显示回答
-- 会话管理：新建、重命名、置顶、删除
+### AI 对话 — 暗色模式
+![AI Chat Dark](screenshots/chat-dark.png)
 
-### 📊 AI 洞察
-- 智能分析你的记录模式，生成学习路线图
-- 费用、反思、学习、项目多维度洞察卡片
-- 带源链接，一键跳转到原始记录
+### 记录列表 — 暗色模式
+![Memories Dark](screenshots/memories-dark.png)
+
+---
+
+## 🛠 核心功能
+
+| 功能 | 说明 |
+|------|------|
+| 📝 **快速记录** | 随手记、待办、提醒三种模式一键切换，支持文字和文件附件 |
+| 📋 **我的记录** | 水彩风插画卡片，8 种随机自然主题插画，分类筛选 + 全文搜索 |
+| ✅ **待办管理** | 优先级排序、状态流转、截止日期提醒、逾期自动标红 |
+| 🔔 **智能提醒** | 系统自动从待办中识别到期/逾期/紧急事项，PushDeer/ServerChan/企业微信推送 |
+| 🤖 **AI 对话** | 三栏布局，基于所有记录的 RAG 问答，SSE 流式输出 |
+| 📊 **AI 洞察** | 智能分析记录模式，生成学习路线图和知识洞察 |
+| 🌓 **双色主题** | 亮色/暗色一键切换，纯黑暗色模式，localStorage 持久化 |
 
 ---
 
@@ -52,27 +53,35 @@ MindMemo 是一个面向个人知识管理的 AI 增强型笔记系统。你可�
 | **认证** | JWT (access + refresh token) |
 | **通知** | PushDeer / ServerChan / 企业微信 Webhook |
 
-### 前端架构
-```
-src/
-├── pages/          # 页面组件（Dashboard / Memories / Chat / Todos / Reminders / Settings）
-├── components/     # 可复用组件（AppShell / MarkdownRenderer / AiChatModal）
-├── api/            # API 客户端 + 类型定义
-├── styles/         # 按页面拆分的 CSS（自然绿色主题）
-├── auth/           # 认证逻辑（token 存储 + 自动刷新）
-└── utils/          # 工具函数（时间格式化 / 资源 URL 解析）
-```
+---
 
-### 后端架构
+## 📁 项目结构
+
 ```
-app/
-├── api/v1/         # REST 端点（auth / memories / todos / chat / qa / insights / reminders）
-├── services/       # 业务逻辑层（LLM / 提醒调度 / 通知 / 洞察）
-├── models/         # SQLAlchemy ORM 模型
-├── repos/          # 数据访问层
-├── schemas/        # Pydantic 请求/响应模型
-├── orchestration/  # QA 工作流（路由 → 检索 → 回答）
-└── tools/          # Agent 工具（记忆搜索 / 天气 / 网页搜索）
+MindMemo/
+├── frontend/               # React + Vite 前端
+│   ├── src/
+│   │   ├── pages/          # 页面组件（Dashboard / Memories / Chat / Todos / Reminders / Settings）
+│   │   ├── components/     # 可复用组件（AppShell / MarkdownRenderer / AiChatModal）
+│   │   ├── api/            # API 客户端 + 类型定义
+│   │   ├── styles/         # 按页面拆分的 CSS（自然绿色主题 + 暗色模式）
+│   │   ├── auth/           # 认证逻辑（token 存储 + 自动刷新）
+│   │   └── utils/          # 工具函数（时间格式化 / 资源 URL 解析 / 主题切换）
+│   ├── package.json
+│   └── vite.config.ts
+├── backend/                # FastAPI 后端
+│   ├── app/
+│   │   ├── api/v1/         # REST 端点（auth / memories / todos / chat / qa / insights / reminders）
+│   │   ├── services/       # 业务逻辑层（LLM / 提醒调度 / 通知 / 洞察）
+│   │   ├── models/         # SQLAlchemy ORM 模型
+│   │   ├── repos/          # 数据访问层
+│   │   ├── schemas/        # Pydantic 请求/响应模型
+│   │   ├── orchestration/  # QA 工作流（路由 → 检索 → 回答）
+│   │   └── tools/          # Agent 工具（记忆搜索 / 天气 / 网页搜索）
+│   ├── requirements.txt
+│   └── .env                # 环境配置
+├── screenshots/            # 界面截图
+└── README.md
 ```
 
 ---
@@ -185,51 +194,21 @@ npm run dev -- --host 127.0.0.1 --port 6100
 
 ## 🎨 设计语言
 
-项目采用自然绿色主题：
+项目采用自然绿色主题，支持亮色/暗色双色切换：
 
-| 角色 | 色值 |
-|---|---|
-| 主色 | `#6b9e7a` |
-| 深色 | `#2d6a4f` |
-| 浅色 | `#8cb89c` |
-| 淡绿背景 | `#e8f0e4` |
-| 暖米色背景 | `#faf9f7` / `#f0efec` |
+| 角色 | 亮色 | 暗色 |
+|---|---|---|
+| 主色 | `#6b9e7a` | `#4ea86b` |
+| 深色 | `#2d6a4f` | `#5ec47e` |
+| 淡绿背景 | `#e8f0e4` | `#1a2e20` |
+| 页面背景 | `#faf9f7` | `#0f0f0f` |
+| 卡片背景 | `#ffffff` | `#1e1e1e` |
+| 主文字 | `#1a1a1a` | `#f0f0f0` |
 
-- 水彩风 SVG 插画装饰（叶子、山峦、灯泡等 8 种随机图案）
+- 水彩风 SVG 插画装饰（叶子、咖啡、山峦、花束、便签、书本、铅笔、灯泡 8 种随机图案）
 - 圆角卡片 + 柔和阴影
 - 宽松间距，大字体（标题 ≥ 1.05rem，正文 ≥ 0.9rem）
-
----
-
-## 📁 项目结构
-
-```
-MindMemo/
-├── frontend/               # React + Vite 前端
-│   ├── src/
-│   │   ├── pages/          # 页面组件
-│   │   ├── components/     # 可复用组件
-│   │   ├── api/            # API 客户端
-│   │   ├── styles/         # CSS 样式
-│   │   ├── auth/           # 认证模块
-│   │   └── utils/          # 工具函数
-│   ├── package.json
-│   └── vite.config.ts
-├── backend/                # FastAPI 后端
-│   ├── app/
-│   │   ├── api/v1/         # REST API
-│   │   ├── services/       # 业务逻辑
-│   │   ├── models/         # 数据模型
-│   │   ├── repos/          # 数据访问
-│   │   ├── schemas/        # 请求/响应类型
-│   │   ├── orchestration/  # QA 编排
-│   │   └── tools/          # Agent 工具
-│   ├── scripts/            # 测试/评估脚本
-│   ├── requirements.txt
-│   └── .env                # 环境配置
-├── docs/                   # 设计文档
-└── README.md
-```
+- 暗色模式纯黑底（`#0f0f0f`），零亮色残留
 
 ---
 

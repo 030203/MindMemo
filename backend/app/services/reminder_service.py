@@ -145,12 +145,12 @@ class ReminderService:
                 "title": todo.title,
                 "message": "这项已逾期，建议尽快处理。",
             }
-        if due_at is not None and due_at <= now + timedelta(hours=24):
+        if due_at is not None and now <= due_at <= now + timedelta(minutes=5):
             return {
                 "reminder_type": "due_soon",
-                "level": "medium",
+                "level": "high",
                 "title": todo.title,
-                "message": "这项即将到点，请留意处理。",
+                "message": "⏰ 时间到了：" + todo.title,
             }
         if todo.priority == "urgent":
             return {
@@ -172,6 +172,15 @@ class ReminderService:
                 "level": "low",
                 "title": todo.title,
                 "message": "这项暂时卡住了，可以先拆解一个小步骤。",
+            }
+        # 用户通过“提醒”入口明确设置了 remind_at 的待办：无论时间远近，
+        # 都应在提醒列表中可见，否则用户会觉得“提醒没记上”。
+        if todo.remind_at is not None:
+            return {
+                "reminder_type": "scheduled",
+                "level": "low",
+                "title": todo.title,
+                "message": "⏰ 已设置提醒：" + todo.title,
             }
         return None
 
